@@ -1,0 +1,13 @@
+{
+  "Servers": {
+    "1": {
+      "Name": "compras",
+      "Group": "Servers",
+      "Host": "db",
+      "Port": 5432,
+      "MaintenanceDB": "compras",
+      "Username": "app",
+      "SSLMode": "prefer"
+    }
+  }
+}
