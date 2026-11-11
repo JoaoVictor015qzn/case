@@ -3,6 +3,7 @@ from abc import ABC, abstractmethod
 from app.schemas.grounding.grounding_candidate import GroundingCandidate
 
 
+# Contrato (Strategy) de uma regra de negócio aplicada a cada item candidato
 class GroundingRule(ABC):
     @abstractmethod
     def violation(self, candidate: GroundingCandidate) -> str | None:
