@@ -9,4 +9,5 @@ class ToolCallTrace(BaseModel):
     name: str
     arguments: dict[str, JsonValue]
     is_error: bool
+    # Tempo da chamada em milissegundos; nunca negativo.
     duration_ms: int = Field(ge=0)
