@@ -1,6 +1,7 @@
 import type { Requisition } from "@/lib/types/requisition";
 import type { ToolCall } from "@/lib/types/tool-call";
 
+// Mensagem exibida no chat, do usuário ou do agente, com requisição e erros opcionais.
 export type ChatMessage = {
   id: string;
   role: "user" | "agent";
