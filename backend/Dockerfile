@@ -21,6 +21,7 @@ RUN pip install -r requirements-dev.txt
 COPY pyproject.toml .
 COPY app ./app
 COPY tests ./tests
+COPY evals ./evals
 
 CMD ["sh", "-c", "ruff check . && ruff format --check . && ty check && pytest"]
 
