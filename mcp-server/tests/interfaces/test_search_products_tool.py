@@ -18,6 +18,7 @@ async def test_returns_matching_products_with_price_and_stock(client: Client) ->
         "category": "laptops",
         "price": {"amount": "1999.99", "currency": "USD"},
         "stock": 24,
+        "minimum_order_quantity": 1,
         "availability_status": "In Stock",
     }
 
