@@ -16,9 +16,11 @@ class OpenAIErrorTranslator:
     # 400 schema/parâmetro recusado, 401 chave, 402 sem créditos, 403 bloqueio, 404 modelo.
     CONFIGURATION_STATUSES = frozenset({400, 401, 402, 403, 404})
 
+    # Classifica o erro do SDK em timeout, configuração ou indisponibilidade do LLM.
     def translate(self, error: openai.OpenAIError) -> DomainError:
         if isinstance(error, openai.APITimeoutError):
             return LLMTimeoutError(str(error))
+        # Status de configuração (chave, créditos, modelo) é logado com dica de correção.
         if (
             isinstance(error, openai.APIStatusError)
             and error.status_code in self.CONFIGURATION_STATUSES
@@ -30,4 +32,5 @@ class OpenAIErrorTranslator:
                 error.message,
             )
             return LLMConfigurationError(f"status={error.status_code} {error.message}")
+        # Qualquer outra falha (rede, 5xx, rate limit) vira indisponibilidade.
         return LLMUnavailableError(f"{type(error).__name__}: {error}")
