@@ -1,0 +1,23 @@
+services:
+  mcp-server:
+    build:
+      context: .
+      target: runtime
+    environment:
+      DUMMYJSON_TIMEOUT_S: ${DUMMYJSON_TIMEOUT_S:-5}
+      DUMMYJSON_MAX_ATTEMPTS: ${DUMMYJSON_MAX_ATTEMPTS:-3}
+      BACKEND_URL: http://backend:8000
+      INTERNAL_API_TOKEN: ${INTERNAL_API_TOKEN:?defina INTERNAL_API_TOKEN no .env}
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
+    restart: unless-stopped
+
+  mcp-server-tests:
+    build:
+      context: .
+      target: test
+    profiles: [test]

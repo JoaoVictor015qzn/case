@@ -1,0 +1,13 @@
+name: agente-compras
+
+include:
+  - path: db/compose.yml
+    env_file: .env
+  - path: pgadmin/compose.yml
+    env_file: .env
+  - path: mcp-server/compose.yml
+    env_file: .env
+  - path: backend/compose.yml
+    env_file: .env
+  - path: frontend/compose.yml
+    env_file: .env
