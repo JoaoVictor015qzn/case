@@ -16,11 +16,13 @@ class RequisitionItem(BaseModel):
     unit_price: Money
     quantity: int = Field(ge=1)
 
+    # Subtotal da linha (preço unitário x quantidade), incluído na serialização.
     @computed_field
     @property
     def line_total(self) -> Money:
         return self.unit_price.multiply(self.quantity)
 
+    # Cria o item copiando título e preço do snapshot do catálogo.
     @classmethod
     def from_snapshot(cls, snapshot: ProductSnapshot, quantity: int) -> Self:
         return cls(
