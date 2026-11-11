@@ -14,6 +14,7 @@ class ScriptedOpenRouter:
         self._responses = list(responses)
         self.requests: list[dict[str, Any]] = []
 
+    # SDK openai real apontado para o transporte falso, sem retries.
     def client(self) -> AsyncOpenAI:
         transport = httpx2.MockTransport(self._handle)
         return AsyncOpenAI(
@@ -23,6 +24,7 @@ class ScriptedOpenRouter:
             http_client=httpx2.AsyncClient(transport=transport),
         )
 
+    # Guarda o corpo enviado e devolve a próxima resposta do roteiro (JSON ou Response pronta).
     def _handle(self, request: httpx2.Request) -> httpx2.Response:
         self.requests.append(json.loads(request.content))
         scripted = self._responses.pop(0)
@@ -32,6 +34,7 @@ class ScriptedOpenRouter:
             else httpx2.Response(200, json=scripted)
         )
 
+    # Resposta em que o modelo pede a execução de uma tool.
     @staticmethod
     def function_call(
         name: str, arguments: dict[str, Any], call_id: str = "call_1"
@@ -46,6 +49,7 @@ class ScriptedOpenRouter:
         }
         return ScriptedOpenRouter._response([item])
 
+    # Resposta final do modelo com texto, sem tool calls.
     @staticmethod
     def final_text(text: str) -> dict[str, Any]:
         item = {
@@ -57,10 +61,12 @@ class ScriptedOpenRouter:
         }
         return ScriptedOpenRouter._response([item])
 
+    # Resposta final cujo texto é o rascunho serializado em JSON (saída estruturada).
     @classmethod
     def final_draft(cls, draft: RequisitionDraft) -> dict[str, Any]:
         return cls.final_text(draft.model_dump_json())
 
+    # Envelope mínimo de um objeto response da Responses API com a saída dada.
     @staticmethod
     def _response(output: list[dict[str, Any]]) -> dict[str, Any]:
         return {
