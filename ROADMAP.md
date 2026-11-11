@@ -10,12 +10,12 @@ Legenda: ✅ feito · 🟡 em andamento / feito sem commit · ⬜ falta · ⭐ o
 
 | Peça | Status | Observação |
 |---|---|---|
-| Setup do repositório | 🟡 | Arquivos prontos, nada commitado |
-| Skills do Cursor | 🟡 | Atualizadas para DDD + schemas + compose por serviço, sem commit |
-| Servidor MCP | 🟡 | Pronto e testado (19 testes, ruff, ty, e2e com a DummyJSON real), sem commit |
-| Postgres + pgAdmin | 🟡 | `compose.yml` escritos; ainda não subiram juntos |
-| Validação do modelo na OpenRouter | ⬜ | Depende da chave no `.env` |
-| Backend (FastAPI + agente) | ⬜ | Próxima peça |
+| Setup do repositório | ✅ | Commitado na `develop` |
+| Skills do Cursor | ✅ | DDD + schemas + compose por serviço, commitadas |
+| Servidor MCP | ✅ | 19 testes, ruff e ty verdes; e2e com a DummyJSON real; commitado |
+| Postgres + pgAdmin | ✅ | Sobem saudáveis com o mcp-server; pgAdmin importa o servidor `compras` |
+| Validação do modelo na OpenRouter | 🟡 | `openai/gpt-4.1-mini` aceita tools + `json_schema` strict; sem commit |
+| Backend (FastAPI + agente) | 🟡 | Schemas e domínio prontos (25 testes, ruff e ty verdes); sem commit |
 | Chat (Next.js) | ⬜ | |
 | CI | ⬜ | |
 | Script de evals | ⬜ | |
@@ -26,11 +26,11 @@ Legenda: ✅ feito · 🟡 em andamento / feito sem commit · ⬜ falta · ⭐ o
 
 | Requisito | Status | Onde |
 |---|---|---|
-| `docker compose up` sobe as quatro peças | ⬜ | `compose.yml` da raiz com `include` (hoje: db, pgadmin, mcp-server) |
+| `docker compose up` sobe as quatro peças | 🟡 | `compose.yml` da raiz com `include`; db, pgadmin e mcp-server já sobem saudáveis; faltam backend e frontend |
 | Tabelas criadas automaticamente ao subir | ⬜ | Alembic no `prestart.sh` do backend |
 | O modelo decide quando chamar cada ferramenta | ⬜ | Loop do `OpenRouterPurchasingAgent` |
 | DummyJSON falhou ou demorou → mensagem clara no chat | 🟡 | MCP pronto (timeout, retry, `ToolError`); falta backend (503/504) e chat |
-| Um teste por ferramenta do MCP, sem chave de LLM | ✅ | `mcp-server/tests/interfaces/` (sem commit) |
+| Um teste por ferramenta do MCP, sem chave de LLM | ✅ | `mcp-server/tests/interfaces/` |
 | README com como rodar e principais decisões | ⬜ | |
 
 ## Diferenciais
@@ -44,19 +44,23 @@ Legenda: ✅ feito · 🟡 em andamento / feito sem commit · ⬜ falta · ⭐ o
 
 ---
 
-## Fase 0 — Setup 🟡
+## Fase 0 — Setup ✅
 
 - [x] Branch `develop` criada a partir da `main`
 - [x] `.gitignore` (segredos, PDF, `docs/`, caches)
 - [x] `.gitattributes` (LF para `.sh` e `Dockerfile`)
 - [x] `.env.example` com todas as variáveis
 - [x] `.env` local criado a partir do exemplo
-- [ ] **Colar a `OPENROUTER_API_KEY` no `.env`** (usuário)
-- [x] `pgadmin/servers.json`
+- [x] `OPENROUTER_API_KEY` colada no `.env` (usuário)
+- [x] `pgadmin/servers.json`, `pgadmin/compose.yml` e `db/compose.yml`
 - [x] Skills atualizadas para a estrutura nova
-- [ ] Commit (aguardando aprovação)
+- [x] Autor do repositório configurado com `--local`: `JoaoVictor015qzn <joaovictorsz1230@gmail.com>`
+- [x] Commits: 89, um por arquivo, Conventional Commits em português, sem coautor
+- [x] Verificado: nenhum segredo e nenhum `.env` no histórico
+- [x] Verificado: `docker compose up` sobe db (Postgres 18.6), pgadmin (servidor `compras` importado) e mcp-server, todos saudáveis
+- [ ] Push (o usuário faz no fim)
 
-## Fase 1 — Servidor MCP 🟡
+## Fase 1 — Servidor MCP ✅
 
 - [x] `schemas/` por assunto: `pricing`, `product`, `tools`, `dummyjson`, `health`, `settings`
 - [x] `domain/`: erros e port `ProductCatalog`
@@ -67,26 +71,37 @@ Legenda: ✅ feito · 🟡 em andamento / feito sem commit · ⬜ falta · ⭐ o
 - [x] Dockerfile multi-stage (`base` / `test` / `runtime`) e `mcp-server/compose.yml`
 - [x] 19 testes, ruff e ty verdes via `docker compose --profile test run --rm mcp-server-tests`
 - [x] Teste ponta a ponta pelo compose contra a DummyJSON real
-- [ ] Commits (aguardando aprovação)
+- [x] Commits
+- [x] Testes repetidos a partir do estado commitado: 19 passando
+- [x] `minimum_order_quantity` incluído no resultado de `buscar_produtos` para o grounding (sem commit)
 
-## Fase 2 — Validar o modelo na OpenRouter ⬜
+## Fase 2 — Validar o modelo na OpenRouter 🟡
 
-- [ ] Chamada curta com `tools` + `text.format` `json_schema` `strict` no modelo candidato (`openai/gpt-4.1-mini`)
-- [ ] Confirmar que o schema do `RequisitionDraft` é aceito (`anyOf` de `X | None`, sem `minimum`)
-- [ ] Fixar o modelo no `.env.example`
-- [ ] Medir custo e latência de uma execução típica
+- [x] Loop curto com as tools reais do MCP + `text.format` `json_schema` `strict` em `openai/gpt-4.1-mini` (provider Azure, `require_parameters`)
+- [x] Primeira tentativa recusada: `$ref cannot have keywords {'description'}` no campo `status`. Corrigido (descrição foi para a docstring do enum) e coberto por teste
+- [x] Schema aceito depois do ajuste (`anyOf` de `float | None` e `$defs` funcionam)
+- [x] Modelo `openai/gpt-4.1-mini` já fixado no `.env.example`
+- [x] Medido: 2–7 s e ~0,7–1,7 mil tokens de entrada por pedido
+- [x] Resultado dos 3 pedidos:
+  - "2 notebooks até US$ 1500": traduziu para `laptop` e o grounding aceitou
+  - "1 ferrari": respondeu sem chamar nenhuma tool (ajustar o prompt na Fase 6)
+  - "3 Samsung + 1 mouse": o modelo **inventou o id 201** e o grounding descartou
+- [ ] Commit
 
-## Fase 3 — Backend: schemas e domínio ⬜
+## Fase 3 — Backend: schemas e domínio 🟡
 
-- [ ] `schemas/pricing/`: `Money`, `Currency`, `Budget`
-- [ ] `schemas/product/`: `ProductSnapshot`
-- [ ] `schemas/requisition/`: `Requisition` (aggregate root, calcula total), `RequisitionItem`, `RequisitionStatus`
-- [ ] `schemas/agent/`: `DraftItem`, `RequisitionDraft`, `ToolCallTrace`, `AgentRun`
-- [ ] `schemas/settings/`: `Settings`
-- [ ] `domain/errors/`: `DomainError` + um erro por arquivo, com `user_message` em pt-BR
-- [ ] `domain/ports/`: `PurchasingAgent`, `CatalogToolsGateway`, `RequisitionRepository`, `UnitOfWork`
-- [ ] `domain/services/`: `GroundingValidator`, `RequisitionFactory`
-- [ ] Testes de domínio (totais, grounding, orçamento, estoque)
+- [x] `schemas/pricing/`: `Money`, `Currency`, `Budget`
+- [x] `schemas/product/`: `ProductSnapshot`
+- [x] `schemas/requisition/`: `Requisition` (aggregate root, calcula total, sem produto repetido), `RequisitionItem`, `RequisitionStatus`
+- [x] `schemas/agent/`: `DraftStatus`, `DraftItem`, `RequisitionDraft`, `ToolCallTrace`, `AgentRun`
+- [x] `schemas/grounding/`: `GroundingCandidate`, `GroundingResult` (não estava no plano)
+- [x] `schemas/settings/`: `Settings`
+- [x] `domain/errors/`: `DomainError` + um erro por arquivo, com `user_message` em pt-BR
+- [x] `domain/ports/`: `PurchasingAgent`, `RequisitionRepository`, `UnitOfWork` (`CatalogToolsGateway` ficou para a Fase 6, junto do adapter)
+- [x] `domain/services/`: `GroundingValidator`, `RequisitionFactory` e regras de grounding como Strategy (`PositiveQuantityRule`, `StockRule`, `MinimumOrderQuantityRule`, `BudgetRule`)
+- [x] `pyproject.toml`, `requirements*.txt`, `Dockerfile` (por enquanto só `base` e `test`), `.dockerignore`, `compose.yml` com `backend-tests` e `include` na raiz
+- [x] 25 testes, ruff e ty verdes via `docker compose --profile test run --rm backend-tests`
+- [ ] Commit
 
 ## Fase 4 — Backend: casos de uso ⬜
 
@@ -122,8 +137,8 @@ Legenda: ✅ feito · 🟡 em andamento / feito sem commit · ⬜ falta · ⭐ o
 
 ## Fase 8 — Integração com Docker (marco principal) ⬜
 
-- [ ] `backend/Dockerfile` (multi-stage) e `backend/compose.yml` (+ `backend-tests`)
-- [ ] `include` do backend no `compose.yml` da raiz
+- [ ] Estágio `runtime` no `backend/Dockerfile` e serviço `backend` no `backend/compose.yml` (`test` e `backend-tests` já existem)
+- [x] `include` do backend no `compose.yml` da raiz
 - [ ] `docker compose up --build`: db, pgadmin, mcp-server e backend saudáveis
 - [ ] Tabelas visíveis no pgAdmin
 - [ ] **Pedido de exemplo funcionando via `POST /requisicoes`**
@@ -172,7 +187,7 @@ Legenda: ✅ feito · 🟡 em andamento / feito sem commit · ⬜ falta · ⭐ o
 
 | Quando | O quê |
 |---|---|
-| Hoje, até 19h | Aprovar e commitar setup + MCP; validar o modelo; schemas e domínio do backend |
+| Hoje, até 19h | ~~Aprovar e commitar setup + MCP~~ (feito); validar o modelo; schemas e domínio do backend |
 | Hoje, 19h–21h | Casos de uso, persistência e agente |
 | Hoje, 21h–23h | HTTP e integração Docker (**pedido de exemplo funcionando**) |
 | Amanhã, 8h–11h | Chat Next.js |
@@ -194,19 +209,23 @@ Legenda: ✅ feito · 🟡 em andamento / feito sem commit · ⬜ falta · ⭐ o
 | Testes e lint via estágio `test` do Dockerfile | Nada instalado no host; CI igual ao local | Rebuild da camada de código a cada execução |
 | pgAdmin com servidor pré-registrado | Inspeção do banco sem configuração manual | Um serviço extra no compose |
 | MCP stateless com retry só em falha transitória | Escala horizontal; resiliência a DummyJSON instável | Pior caso ≈ 3 × timeout |
+| Um commit por arquivo, rodado pelo usuário no próprio terminal | Histórico granular, sem o coautor que o Cursor injeta nos commits do agente | Histórico longo (89 commits só no setup + MCP) |
 
 ## Decisões pendentes (consultar o usuário)
 
-- [ ] Quando commitar o que já está pronto (setup, skills, MCP)
+- [x] ~~Quando commitar o que já está pronto~~ (feito)
+- [ ] Como commitar as próximas peças: script gerado por mim e rodado por você, como desta vez
 - [ ] Formato do dinheiro na API do backend: objeto `Money` ou string
 - [ ] Estilo do frontend (classes onde der vs. idioma React)
 - [ ] Fazer ou não a terceira tool `criar_requisicao`, e com qual desenho
+- [x] ~~`buscar_produtos` sem `minimum_order_quantity`~~: campo incluído no resumo da busca (testado e conferido contra a DummyJSON real)
 
 ## Riscos
 
 | Risco | Mitigação |
 |---|---|
-| Provider da OpenRouter rejeitar o schema `strict` | Validar na Fase 2; simplificar o schema e validar no domínio |
+| Provider da OpenRouter rejeitar o schema `strict` | Aconteceu na Fase 2 (`$ref` com `description`); corrigido e coberto por teste |
+| Modelo inventar produtos ou responder sem consultar o catálogo | Visto na Fase 2; o grounding descarta ids não observados; o prompt da Fase 6 vai exigir busca antes de "não encontrado" |
 | Chave com orçamento limitado | Modelo barato; evals só quando necessário |
 | `docker compose up` falhar na máquina do avaliador | Teste em clone limpo; fail-fast no `.env`; healthchecks |
 | Prazo | Marco da Fase 8 hoje; diferenciais só depois do fluxo completo |
