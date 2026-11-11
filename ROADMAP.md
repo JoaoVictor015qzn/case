@@ -198,6 +198,7 @@ Legenda: ✅ feito · 🟡 em andamento / feito sem commit · ⬜ falta · ⭐ o
 - [x] Roadmap e skills (`agent-loop`, `mcp-server`, `fastapi-backend`, `quality-ci`) atualizados
 - [x] Script de commits gerado (`Desktop\commits-fase-10-11-12-13.ps1`)
 - [x] Código e testes comentados (uma linha por trecho, em português) para facilitar a revisão; só linhas de comentário acrescentadas, testes e lint verdes
+- [x] Documentação técnica em `docs/` (índice + 9 documentos com diagramas Mermaid); `.gitignore` passa a ignorar só os PDFs da pasta
 - [x] Commits (usuário)
 - [x] Clone limpo → `cp .env.example .env` → chave + token → `docker compose up --build` → pedido de exemplo OK (usuário)
 - [x] Merge `develop` → `main` (usuário)
