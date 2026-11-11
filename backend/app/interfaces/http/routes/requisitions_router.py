@@ -11,6 +11,7 @@ from app.schemas.api.error_response import ErrorResponse
 from app.schemas.api.requisition_created_response import RequisitionCreatedResponse
 from app.schemas.api.requisition_public import RequisitionPublic
 
+# Header opcional Idempotency-Key, validado e documentado no OpenAPI.
 IdempotencyKeyHeader = Annotated[
     str | None,
     Header(
@@ -21,7 +22,9 @@ IdempotencyKeyHeader = Annotated[
 ]
 
 
+# Router público de requisições: POST e GET /requisicoes.
 class RequisitionsRouter:
+    # Respostas de erro documentadas no OpenAPI do POST.
     ERROR_RESPONSES: ClassVar[dict[int | str, dict[str, Any]]] = {
         status.HTTP_422_UNPROCESSABLE_CONTENT: {
             "model": ErrorResponse,
@@ -38,6 +41,7 @@ class RequisitionsRouter:
         },
     }
 
+    # Registra as rotas de criação e listagem no APIRouter.
     def __init__(self) -> None:
         self.router = APIRouter(prefix="/requisicoes", tags=["requisicoes"])
         self.router.add_api_route(
@@ -52,6 +56,7 @@ class RequisitionsRouter:
             "", self.list_recent, methods=["GET"], summary="Lista as requisições mais recentes"
         )
 
+    # Roda o agente sobre o pedido: 201 se criou, 200 se a Idempotency-Key já existia.
     async def create(
         self,
         body: CreateRequisitionRequest,
@@ -64,5 +69,6 @@ class RequisitionsRouter:
             response.status_code = status.HTTP_200_OK
         return RequisitionCreatedResponse.from_domain(created)
 
+    # Lista as requisições mais recentes no formato público.
     def list_recent(self, use_case: ListRequisitionsDep) -> list[RequisitionPublic]:
         return [RequisitionPublic.from_domain(requisition) for requisition in use_case.execute()]
