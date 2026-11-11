@@ -12,6 +12,7 @@ if TYPE_CHECKING:
     from app.infrastructure.persistence.tables.requisition_item_table import RequisitionItemTable
 
 
+# Tabela requisition: cabeçalho da requisição de compra gravada.
 class RequisitionTable(SQLModel, table=True):
     __tablename__ = "requisition"
 
@@ -19,11 +20,13 @@ class RequisitionTable(SQLModel, table=True):
     request_text: str = Field(max_length=1000)
     status: RequisitionStatus
     agent_message: str
+    # Itens não atendidos, em JSONB no Postgres e JSON nos demais bancos.
     missing: list[str] = Field(
         default_factory=list, sa_type=JSON().with_variant(JSONB(), "postgresql")
     )
     currency: str = Field(max_length=3)
     total_amount: Decimal = Field(max_digits=12, decimal_places=2)
+    # Única no banco: a mesma chave nunca grava duas requisições.
     idempotency_key: str | None = Field(default=None, max_length=100, unique=True)
     created_at: datetime = Field(index=True)
 
