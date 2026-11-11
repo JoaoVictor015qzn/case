@@ -10,6 +10,7 @@ services:
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:?defina OPENROUTER_API_KEY no .env}
       OPENROUTER_MODEL: ${OPENROUTER_MODEL:?defina OPENROUTER_MODEL no .env}
       MCP_URL: http://mcp-server:8000/mcp
+      INTERNAL_API_TOKEN: ${INTERNAL_API_TOKEN:?defina INTERNAL_API_TOKEN no .env}
       LLM_TIMEOUT_S: ${LLM_TIMEOUT_S:-60}
     depends_on:
       db:
