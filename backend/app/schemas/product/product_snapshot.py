@@ -13,4 +13,5 @@ class ProductSnapshot(BaseModel):
     category: str
     unit_price: Money
     stock: int = Field(ge=0)
+    # Pedido mínimo do fornecedor; assume 1 quando a tool não informa.
     minimum_order_quantity: int = Field(default=1, ge=1)
