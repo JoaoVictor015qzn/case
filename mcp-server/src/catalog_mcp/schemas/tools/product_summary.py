@@ -14,6 +14,7 @@ class ProductSummary(BaseModel):
     category: str
     price: Money = Field(description="Preço unitário.")
     stock: int = Field(description="Unidades disponíveis em estoque.")
+    minimum_order_quantity: int = Field(description="Quantidade mínima por pedido.")
     availability_status: str | None = None
 
     @classmethod
