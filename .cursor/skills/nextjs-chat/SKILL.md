@@ -117,6 +117,15 @@ npx create-next-app@latest frontend --ts --app --src-dir --eslint --use-npm
 
 Se o pacote `next` instalado trouxer docs locais (`node_modules/next/dist/docs/`) ou um `AGENTS.md`, consulte esses arquivos antes de escrever código. Eles correspondem à versão instalada.
 
+## Confirmado na implementação (Next 16.4.6)
+
+- O `create-next-app` atual já liga `cacheComponents` e `partialPrefetching`. Um GET de Route Handler que faz `fetch` roda no request, então o proxy continua dinâmico.
+- Sem `next/font/google`: ele baixa a fonte no build. Use fonte do sistema.
+- O proxy mora na classe `BackendProxy` (`lib/backend-proxy.ts`); o `route.ts` só exporta `POST`/`GET` que delegam.
+- `public/` tem um `.gitkeep`. O git não versiona pasta vazia e o `COPY public` quebraria num clone limpo.
+- O browser gera um `Idempotency-Key` (`crypto.randomUUID()`) por envio. Um duplo clique não cria duas requisições.
+- Ao testar no PowerShell 5: `Invoke-WebRequest` lê JSON sem charset como Latin-1, e script `.ps1` sem BOM corrompe acentos. Use `curl.exe` com corpo em arquivo.
+
 ## Checklist
 
 - [ ] O browser não conhece a URL do backend, e não há `NEXT_PUBLIC_` com URL interna
