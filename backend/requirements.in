@@ -1,0 +1,9 @@
+fastapi[standard]
+sqlmodel
+alembic
+psycopg[binary]
+openai
+mcp
+pydantic-settings
+asyncer
+httpx
