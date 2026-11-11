@@ -151,14 +151,16 @@ class DomainErrorHandler:
 tests/
 ├── fakes/            # FakePurchasingAgent, InMemoryRequisitionRepository, InMemoryUnitOfWork, SampleSnapshots
 ├── domain/           # GroundingValidator, Requisition (totais), Money, Budget
-├── application/      # CreateRequisitionUseCase, ListRequisitionsUseCase
-├── interfaces/       # rotas com TestClient + dependency_overrides
-└── infrastructure/   # repositório (SQLite in-memory), conversor de tools, executor de tool calls
+├── application/      # CreateRequisitionUseCase, RegisterRequisitionUseCase, ListRequisitionsUseCase
+├── interfaces/       # rotas com TestClient + dependency_overrides (ApiHarness)
+├── infrastructure/   # repositório (SQLite in-memory), conversor de tools, executor de tool calls
+└── evals/            # EvalChecker (o runner dos evals roda contra o sistema no ar)
 ```
 
-- `app.dependency_overrides[UseCaseProvider.create_requisition] = lambda: CreateRequisitionUseCase(FakePurchasingAgent(...), ...)`.
+- `ApiHarness` troca `create_requisition`, `register_requisition` e `list_requisitions` em `app.dependency_overrides`. `FakePurchasingAgent(run, saves=..., unit_of_work=...)` simula a tool gravando com a chave do pedido.
 - Sem rede e sem chave de LLM. Rodar: `docker compose --profile test run --rm backend-tests`.
-- Cenários mínimos: criado (201); nada atende (422 com `missing`); item não observado é descartado; preço vem do snapshot e não do LLM; MCP fora (503); timeout do LLM (504); mesma `Idempotency-Key` não duplica; `GET` em ordem decrescente de criação.
+- Cenários mínimos: criado (201); nada atende (422 com `missing`); modelo afirma sucesso sem gravar (502); MCP fora (503); timeout do LLM (504); mesma `Idempotency-Key` não duplica; `GET` em ordem decrescente de criação.
+- Endpoint interno `POST /internal/requisicoes` (`InternalRequisitionsRouter`, `include_in_schema=False`): `InternalTokenGuard` compara `X-Internal-Token` com `compare_digest` (401); 201, replay 200, regra violada 422 sem gravar.
 
 ## Checklist
 
