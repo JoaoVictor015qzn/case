@@ -3,11 +3,13 @@ import type { Requisition } from "@/lib/types/requisition";
 
 const money = new MoneyFormatter();
 
+// Rótulos em português para o status da requisição.
 const STATUS_LABEL: Record<Requisition["status"], string> = {
   complete: "Completa",
   partial: "Parcial",
 };
 
+// Cartão da requisição criada: número, status, tabela de itens e total.
 export function RequisitionCard({
   requisition,
   replayed,
