@@ -18,6 +18,8 @@ As tabelas são criadas sozinhas no start do backend, com `alembic upgrade head`
 
 ## Arquitetura
 
+A documentação completa (arquitetura, stack, cada serviço, API, dados e operação) está em [`docs/`](docs/README.md).
+
 ```mermaid
 flowchart LR
     U[Usuário] --> F[frontend<br/>Next.js + BFF]
