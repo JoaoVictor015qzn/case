@@ -38,6 +38,13 @@ class ErrorResponse(BaseModel):
 
 Cada DTO tem um `@classmethod from_domain(...)` que converte a partir de `schemas/requisition` ou `schemas/agent`. **Nunca** retorne a tabela SQLModel nem o agregado direto.
 
+Formato do JSON (alinhado com os tipos da skill `nextjs-chat`):
+- Os DTOs herdam de `ApiModel` (`alias_generator=to_camel`, `populate_by_name`, `serialize_by_alias`): JSON em camelCase (`requestText`, `toolCalls`, `unitPrice`), atributos em snake_case no Python.
+- Dinheiro é o objeto `Money` (`{"amount": "1999.99", "currency": "USD"}`), decidido com o usuário.
+- Replay por `Idempotency-Key` responde **200** com `replayed: true`; criação nova responde **201**.
+- Além do `DomainErrorHandler`, há handlers para corpo inválido (`RequestValidationError` → 422 com `detail` em texto) e para erro inesperado (500 sem stack), para o chat sempre receber `ErrorResponse`.
+- O agente e o `McpToolsGateway` são criados **por request** no provider (o gateway guarda a conexão do request); o `AsyncOpenAI` e o `Database` são criados uma vez no lifespan.
+
 ## Camadas (onde cada coisa mora)
 
 | Pasta | Classes |
