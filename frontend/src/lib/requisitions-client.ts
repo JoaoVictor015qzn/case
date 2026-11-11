@@ -9,8 +9,10 @@ export class RequisitionsClient {
     private readonly translator = new ErrorMessageTranslator(),
   ) {}
 
+  // Envia o pedido ao BFF e devolve sucesso com a requisição ou erro já traduzido.
   async create(requestText: string, idempotencyKey: string): Promise<CreateRequisitionResult> {
     let response: Response;
+    // Falha de rede antes de qualquer resposta vira mensagem de "sem conexão".
     try {
       response = await fetch(this.endpoint, {
         method: "POST",
@@ -21,6 +23,7 @@ export class RequisitionsClient {
       return { ok: false, status: 0, error: this.translator.network() };
     }
     const body = await this.readJson(response);
+    // Status 2xx é sucesso; os demais viram mensagem clara pelo tradutor de erros.
     if (response.ok) {
       return { ok: true, data: body as CreateRequisitionResponse };
     }
@@ -31,6 +34,7 @@ export class RequisitionsClient {
     };
   }
 
+  // Lê o corpo como JSON; devolve null se vier vazio ou inválido.
   private async readJson(response: Response): Promise<unknown> {
     try {
       return await response.json();
