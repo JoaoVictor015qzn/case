@@ -23,3 +23,17 @@ COPY app ./app
 COPY tests ./tests
 
 CMD ["sh", "-c", "ruff check . && ruff format --check . && ty check && pytest"]
+
+
+FROM base AS runtime
+
+COPY alembic.ini .
+COPY scripts ./scripts
+COPY app ./app
+
+RUN useradd --create-home appuser
+USER appuser
+
+EXPOSE 8000
+
+CMD ["sh", "-c", "sh scripts/prestart.sh && exec fastapi run app/main.py --host 0.0.0.0 --port 8000"]
