@@ -5,6 +5,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from catalog_mcp.schemas.pricing.currency import Currency
 
 
+# Value object de dinheiro: valor em Decimal não negativo mais a moeda.
 class Money(BaseModel):
     model_config = ConfigDict(frozen=True)
 
