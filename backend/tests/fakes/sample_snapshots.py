@@ -4,6 +4,7 @@ from app.schemas.pricing.money import Money
 from app.schemas.product.product_snapshot import ProductSnapshot
 
 
+# Snapshots de produtos do catálogo usados como dados de teste no backend.
 class SampleSnapshots:
     MACBOOK = ProductSnapshot(
         product_id=78,
@@ -19,6 +20,7 @@ class SampleSnapshots:
         unit_price=Money(amount=Decimal("1099.99")),
         stock=40,
     )
+    # Produto com pedido mínimo de 5 unidades, para testar essa regra.
     IPHONE_6 = ProductSnapshot(
         product_id=122,
         title="iPhone 6",
