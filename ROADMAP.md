@@ -18,7 +18,7 @@ Legenda: ✅ feito · 🟡 em andamento / feito sem commit · ⬜ falta · ⭐ o
 | Backend (FastAPI + agente) | ✅ | 85 testes; endpoint interno da `criar_requisicao` |
 | Chat (Next.js) | ✅ | Testado no navegador |
 | CI | ✅ | `.github/workflows/ci.yml`: containers de teste, lint/build do frontend e `docker compose config` |
-| Script de evals | ✅ | `backend/evals/` com os 5 pedidos; placar medido no teste em clone limpo |
+| Script de evals | ✅ | `backend/evals/` com os 5 pedidos; placar não medido (chave do case recusada antes da rodada final) |
 | README | ✅ | Como rodar, arquitetura, decisões, testes, uso de IA e limitações |
 | Entrega | ✅ | Segredos conferidos, código comentado, commits por arquivo; clone limpo, merge e `.zip` com o usuário |
 
@@ -179,7 +179,7 @@ Legenda: ✅ feito · 🟡 em andamento / feito sem commit · ⬜ falta · ⭐ o
 - [x] `backend/evals/` com os 5 casos (3 laptops, notebook → laptop, smartphones, Ferrari, orçamento impossível), em classes; título, preço e categoria conferidos direto na DummyJSON
 - [x] Expectativas conferidas contra o catálogo real (laptops até US$ 1.500: 3; Ferrari: 0; laptop até US$ 50: 0)
 - [x] Testes do `EvalChecker` (85 testes no backend)
-- [x] Runner conferido contra o sistema no ar; placar registrado no teste em clone limpo
+- [ ] Placar contra o sistema no ar: não medido, chave do case recusada (401) antes da rodada final
 - [x] Commit
 
 ## Fase 11 — README ✅
@@ -200,7 +200,8 @@ Legenda: ✅ feito · 🟡 em andamento / feito sem commit · ⬜ falta · ⭐ o
 - [x] Código e testes comentados (uma linha por trecho, em português) para facilitar a revisão; só linhas de comentário acrescentadas, testes e lint verdes
 - [x] Documentação técnica em `docs/` (índice + 9 documentos com diagramas Mermaid); `.gitignore` passa a ignorar só os PDFs da pasta
 - [x] Commits (usuário)
-- [x] Clone limpo → `cp .env.example .env` → chave + token → `docker compose up --build` → pedido de exemplo OK (usuário)
+- [x] Clone limpo → `cp .env.example .env` → chave + token → `docker compose up --build` → os 5 serviços sobem saudáveis (usuário)
+- [ ] Pedido de exemplo pelo LLM no clone limpo: bloqueado pela chave do case recusada (401)
 - [x] Merge `develop` → `main` (usuário)
 - [x] `.zip` com a pasta `.git`
 
