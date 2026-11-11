@@ -1,16 +1,33 @@
 from decimal import Decimal
 
 from app.domain.services.grounding_validator import GroundingValidator
-from tests.fakes.agent_run_builder import AgentRunBuilder
+from app.schemas.grounding.grounding_candidate import GroundingCandidate
+from app.schemas.pricing.budget import Budget
+from app.schemas.pricing.money import Money
+from app.schemas.product.product_snapshot import ProductSnapshot
 from tests.fakes.sample_snapshots import SampleSnapshots
 
 validator = GroundingValidator()
 
 
-def test_accepts_observed_product_with_price_from_snapshot() -> None:
-    run = AgentRunBuilder().observed(SampleSnapshots.MACBOOK).item(78, 2).build()
+# Monta candidatos de grounding: produto, quantidade e teto de preço opcional.
+class Candidates:
+    # Converte o teto em texto para Budget; sem teto, o candidato fica sem orçamento.
+    @staticmethod
+    def of(
+        snapshot: ProductSnapshot, quantity: int, max_unit_price: str | None = None
+    ) -> GroundingCandidate:
+        budget = (
+            None
+            if max_unit_price is None
+            else Budget(max_unit_price=Money(amount=Decimal(max_unit_price)))
+        )
+        return GroundingCandidate(snapshot=snapshot, quantity=quantity, budget=budget)
 
-    result = validator.validate(run)
+
+# Item válido é aceito com preço, título e total vindos do catálogo, não do LLM.
+def test_accepts_product_with_price_from_snapshot() -> None:
+    result = validator.validate([Candidates.of(SampleSnapshots.MACBOOK, 2)])
 
     assert result.is_clean
     (item,) = result.accepted
@@ -19,61 +36,38 @@ def test_accepts_observed_product_with_price_from_snapshot() -> None:
     assert item.line_total.amount == Decimal("3999.98")
 
 
-def test_rejects_product_not_observed_in_this_run() -> None:
-    run = AgentRunBuilder().observed(SampleSnapshots.MACBOOK).item(999, 1).build()
-
-    result = validator.validate(run)
-
-    assert result.accepted == ()
-    assert "Produto 999" in result.rejections[0]
-
-
-def test_merges_duplicate_product_lines() -> None:
-    run = AgentRunBuilder().observed(SampleSnapshots.LENOVO).item(81, 1).item(81, 2).build()
-
-    (item,) = validator.validate(run).accepted
-
-    assert item.quantity == 3
-
-
+# Quantidade maior que o estoque é recusada.
 def test_rejects_quantity_above_stock() -> None:
-    run = AgentRunBuilder().observed(SampleSnapshots.MACBOOK).item(78, 25).build()
-
-    result = validator.validate(run)
+    result = validator.validate([Candidates.of(SampleSnapshots.MACBOOK, 25)])
 
     assert result.accepted == ()
     assert len(result.rejections) == 1
 
 
+# Quantidade abaixo do pedido mínimo do produto é recusada.
 def test_rejects_quantity_below_minimum_order() -> None:
-    run = AgentRunBuilder().observed(SampleSnapshots.IPHONE_6).item(122, 2).build()
-
-    result = validator.validate(run)
+    result = validator.validate([Candidates.of(SampleSnapshots.IPHONE_6, 2)])
 
     assert result.accepted == ()
     assert len(result.rejections) == 1
 
 
+# Quantidade zero é recusada.
 def test_rejects_non_positive_quantity() -> None:
-    run = AgentRunBuilder().observed(SampleSnapshots.LENOVO).item(81, 0).build()
-
-    result = validator.validate(run)
+    result = validator.validate([Candidates.of(SampleSnapshots.LENOVO, 0)])
 
     assert result.accepted == ()
     assert result.rejections
 
 
+# Item acima do orçamento é recusado sem derrubar os demais itens válidos.
 def test_rejects_price_above_budget_and_keeps_the_rest() -> None:
-    run = (
-        AgentRunBuilder()
-        .observed(SampleSnapshots.MACBOOK, SampleSnapshots.LENOVO)
-        .max_unit_price(1500)
-        .item(78, 1)
-        .item(81, 1)
-        .build()
+    result = validator.validate(
+        [
+            Candidates.of(SampleSnapshots.MACBOOK, 1, max_unit_price="1500"),
+            Candidates.of(SampleSnapshots.LENOVO, 1, max_unit_price="1500"),
+        ]
     )
-
-    result = validator.validate(run)
 
     assert [item.product_id for item in result.accepted] == [81]
     assert len(result.rejections) == 1
