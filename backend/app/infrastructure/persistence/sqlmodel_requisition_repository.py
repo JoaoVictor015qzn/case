@@ -14,20 +14,25 @@ from app.infrastructure.persistence.tables.requisition_table import RequisitionT
 from app.schemas.requisition.requisition import Requisition
 
 
+# Repositório de requisições sobre a Session do SQLModel, mapeando tabela <-> agregado.
 class SqlModelRequisitionRepository(RequisitionRepository):
+    # Nome da coluna procurado na mensagem de IntegrityError para detectar chave duplicada.
     IDEMPOTENCY_COLUMN = "idempotency_key"
     # Em runtime o atributo é instrumentado pelo SQLAlchemy; o SQLModel o tipa como a lista.
     LOAD_ITEMS = selectinload(
         cast(QueryableAttribute[list[RequisitionItemTable]], RequisitionTable.items)
     )
 
+    # Usa a Session do Unit of Work e o mapper entre agregado e tabelas.
     def __init__(self, session: Session, mapper: RequisitionTableMapper) -> None:
         self._session = session
         self._mapper = mapper
 
+    # Insere a requisição (sem commit) e devolve o agregado já com id.
     def add(self, requisition: Requisition) -> Requisition:
         row = self._mapper.to_table(requisition)
         self._session.add(row)
+        # flush gera o id; violação da chave única vira DuplicateIdempotencyKeyError.
         try:
             self._session.flush()
         except IntegrityError as error:
@@ -37,6 +42,7 @@ class SqlModelRequisitionRepository(RequisitionRepository):
             raise
         return self._mapper.to_domain(row)
 
+    # Busca a requisição gravada com a chave de idempotência, já com os itens.
     def find_by_idempotency_key(self, idempotency_key: str) -> Requisition | None:
         statement = (
             select(RequisitionTable)
@@ -46,6 +52,7 @@ class SqlModelRequisitionRepository(RequisitionRepository):
         row = self._session.exec(statement).first()
         return None if row is None else self._mapper.to_domain(row)
 
+    # Lista as requisições mais recentes primeiro, com os itens carregados.
     def list_recent(self, limit: int) -> list[Requisition]:
         statement = (
             select(RequisitionTable)
