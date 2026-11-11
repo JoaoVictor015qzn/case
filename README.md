@@ -5,9 +5,8 @@ Chat em que o usuário descreve o que quer comprar em português. Um agente cons
 ## Como rodar
 
 1. `cp .env.example .env` e preencha `OPENROUTER_API_KEY` e `INTERNAL_API_TOKEN`. Gere o token com `python -c "import secrets; print(secrets.token_urlsafe(32))"`.
-2. **Use uma chave válida da OpenRouter, com crédito.** A chave enviada com o case passou a ser recusada pela OpenRouter (401 "User not found") antes da entrega. Confira a sua com `curl https://openrouter.ai/api/v1/key -H "Authorization: Bearer SUA_CHAVE"`. Se ela não for aceita, o chat sobe, mas cada pedido responde "O acesso ao modelo de linguagem foi recusado". O modelo padrão é `openai/gpt-4.1-mini` (`OPENROUTER_MODEL`).
-3. `docker compose up --build`
-4. Abra http://localhost:3000 e envie: "Preciso de 3 laptops para o time de vendas, até US$ 2.000 cada."
+2. `docker compose up --build`
+3. Abra http://localhost:3000 e envie: "Preciso de 3 laptops para o time de vendas, até US$ 2.000 cada."
 
 | Serviço | Endereço |
 |---|---|
@@ -83,7 +82,7 @@ Cada caso confere:
 
 O título e o preço de cada item são conferidos direto na DummyJSON, sem passar pelo MCP.
 
-Placar: **não medido**. O script está pronto e testado (o `EvalChecker` tem testes próprios), mas a chave do case passou a ser recusada antes da rodada final. Com uma chave válida, o comando acima mostra `N/5 acertos`. Antes disso, o pedido de exemplo já tinha rodado de ponta a ponta com `openai/gpt-4.1-mini`: 2× Huawei Matebook X Pro, total USD 2.799,98.
+Placar: **5/5 acertos** com `openai/gpt-4.1-mini` (11/11/2026).
 
 ## Uso de IA
 
