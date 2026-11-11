@@ -14,8 +14,8 @@ Legenda: ✅ feito · 🟡 em andamento / feito sem commit · ⬜ falta · ⭐ o
 | Skills do Cursor | ✅ | DDD + schemas + compose por serviço, commitadas |
 | Servidor MCP | ✅ | 19 testes, ruff e ty verdes; e2e com a DummyJSON real; commitado |
 | Postgres + pgAdmin | ✅ | Sobem saudáveis com o mcp-server; pgAdmin importa o servidor `compras` |
-| Validação do modelo na OpenRouter | 🟡 | `openai/gpt-4.1-mini` aceita tools + `json_schema` strict; sem commit |
-| Backend (FastAPI + agente) | 🟡 | Schemas e domínio prontos (25 testes, ruff e ty verdes); sem commit |
+| Validação do modelo na OpenRouter | ✅ | `openai/gpt-4.1-mini` aceita tools + `json_schema` strict; commitado |
+| Backend (FastAPI + agente) | 🟡 | Domínio commitado; casos de uso, persistência e agente prontos sem commit (60 testes, ruff e ty verdes; smoke real OK); próximo: HTTP |
 | Chat (Next.js) | ⬜ | |
 | CI | ⬜ | |
 | Script de evals | ⬜ | |
@@ -27,8 +27,8 @@ Legenda: ✅ feito · 🟡 em andamento / feito sem commit · ⬜ falta · ⭐ o
 | Requisito | Status | Onde |
 |---|---|---|
 | `docker compose up` sobe as quatro peças | 🟡 | `compose.yml` da raiz com `include`; db, pgadmin e mcp-server já sobem saudáveis; faltam backend e frontend |
-| Tabelas criadas automaticamente ao subir | ⬜ | Alembic no `prestart.sh` do backend |
-| O modelo decide quando chamar cada ferramenta | ⬜ | Loop do `OpenRouterPurchasingAgent` |
+| Tabelas criadas automaticamente ao subir | 🟡 | Migration e `prestart.sh` prontos; falta o serviço `backend` rodá-lo no start (Fase 8) |
+| O modelo decide quando chamar cada ferramenta | 🟡 | Loop do `OpenRouterPurchasingAgent` pronto e testado; falta expor via HTTP |
 | DummyJSON falhou ou demorou → mensagem clara no chat | 🟡 | MCP pronto (timeout, retry, `ToolError`); falta backend (503/504) e chat |
 | Um teste por ferramenta do MCP, sem chave de LLM | ✅ | `mcp-server/tests/interfaces/` |
 | README com como rodar e principais decisões | ⬜ | |
@@ -55,8 +55,8 @@ Legenda: ✅ feito · 🟡 em andamento / feito sem commit · ⬜ falta · ⭐ o
 - [x] `pgadmin/servers.json`, `pgadmin/compose.yml` e `db/compose.yml`
 - [x] Skills atualizadas para a estrutura nova
 - [x] Autor do repositório configurado com `--local`: `JoaoVictor015qzn <joaovictorsz1230@gmail.com>`
-- [x] Commits: 89, um por arquivo, Conventional Commits em português, sem coautor
-- [x] Verificado: nenhum segredo e nenhum `.env` no histórico
+- [x] Commits: 89 (setup + MCP) e 66 (fases 2 e 3), um por arquivo, Conventional Commits em português, sem coautor
+- [x] Verificado após cada lote: autor único `JoaoVictor015qzn`, nenhum segredo e nenhum `.env` no histórico
 - [x] Verificado: `docker compose up` sobe db (Postgres 18.6), pgadmin (servidor `compras` importado) e mcp-server, todos saudáveis
 - [ ] Push (o usuário faz no fim)
 
@@ -73,9 +73,9 @@ Legenda: ✅ feito · 🟡 em andamento / feito sem commit · ⬜ falta · ⭐ o
 - [x] Teste ponta a ponta pelo compose contra a DummyJSON real
 - [x] Commits
 - [x] Testes repetidos a partir do estado commitado: 19 passando
-- [x] `minimum_order_quantity` incluído no resultado de `buscar_produtos` para o grounding (sem commit)
+- [x] `minimum_order_quantity` incluído no resultado de `buscar_produtos` para o grounding (commitado)
 
-## Fase 2 — Validar o modelo na OpenRouter 🟡
+## Fase 2 — Validar o modelo na OpenRouter ✅
 
 - [x] Loop curto com as tools reais do MCP + `text.format` `json_schema` `strict` em `openai/gpt-4.1-mini` (provider Azure, `require_parameters`)
 - [x] Primeira tentativa recusada: `$ref cannot have keywords {'description'}` no campo `status`. Corrigido (descrição foi para a docstring do enum) e coberto por teste
@@ -86,9 +86,9 @@ Legenda: ✅ feito · 🟡 em andamento / feito sem commit · ⬜ falta · ⭐ o
   - "2 notebooks até US$ 1500": traduziu para `laptop` e o grounding aceitou
   - "1 ferrari": respondeu sem chamar nenhuma tool (ajustar o prompt na Fase 6)
   - "3 Samsung + 1 mouse": o modelo **inventou o id 201** e o grounding descartou
-- [ ] Commit
+- [x] Commit
 
-## Fase 3 — Backend: schemas e domínio 🟡
+## Fase 3 — Backend: schemas e domínio ✅
 
 - [x] `schemas/pricing/`: `Money`, `Currency`, `Budget`
 - [x] `schemas/product/`: `ProductSnapshot`
@@ -101,30 +101,41 @@ Legenda: ✅ feito · 🟡 em andamento / feito sem commit · ⬜ falta · ⭐ o
 - [x] `domain/services/`: `GroundingValidator`, `RequisitionFactory` e regras de grounding como Strategy (`PositiveQuantityRule`, `StockRule`, `MinimumOrderQuantityRule`, `BudgetRule`)
 - [x] `pyproject.toml`, `requirements*.txt`, `Dockerfile` (por enquanto só `base` e `test`), `.dockerignore`, `compose.yml` com `backend-tests` e `include` na raiz
 - [x] 25 testes, ruff e ty verdes via `docker compose --profile test run --rm backend-tests`
+- [x] Commit
+
+## Fase 4 — Backend: casos de uso 🟡
+
+- [x] `CreateRequisitionUseCase` (agente → grounding → factory → Unit of Work; persistência síncrona via `asyncify`)
+- [x] Idempotency key: chave repetida devolve a requisição existente sem rodar o agente; corrida entre dois requests com a mesma chave vira `DuplicateIdempotencyKeyError` e também devolve a existente
+- [x] `ListRequisitionsUseCase`
+- [x] `CreatedRequisition` em `schemas/requisition/` (requisição + `tool_calls` + `replayed`)
+- [x] Fakes: `FakePurchasingAgent`, `InMemoryUnitOfWork`, `InMemoryRequisitionRepository`
+- [x] Testes: criado, nada atende, item não observado, preço do snapshot, idempotência, erro do agente não salva nada
 - [ ] Commit
 
-## Fase 4 — Backend: casos de uso ⬜
+## Fase 5 — Backend: persistência 🟡
 
-- [ ] `CreateRequisitionUseCase` (agente → grounding → factory → Unit of Work; idempotency key)
-- [ ] `ListRequisitionsUseCase`
-- [ ] Fakes: `FakePurchasingAgent`, `InMemoryUnitOfWork`, `InMemoryRequisitionRepository`
-- [ ] Testes: criado, nada atende, item não observado, preço do snapshot, idempotência
+- [x] `Database`, `RequisitionTable`, `RequisitionItemTable`, `RequisitionTableMapper`
+- [x] `SqlModelRequisitionRepository` (`selectinload`, sem N+1), `SqlModelUnitOfWork`
+- [x] `DatabaseSettings` separado: o Alembic roda sem exigir a chave da OpenRouter (`Settings` herda dele)
+- [x] Alembic (`alembic.ini`, `env.py` em classe, `script.py.mako` com `sqlmodel.sql.sqltypes`)
+- [x] Migration autogerada e revisada: `requisition_id` virou `NOT NULL` e o `downgrade` remove o enum
+- [x] Conferida no Postgres real: `upgrade` → `alembic check` sem diferenças → `downgrade` → `upgrade`
+- [x] Repositório conferido no Postgres real (JSONB, enum, `NUMERIC`, chave única → `DuplicateIdempotencyKeyError`)
+- [x] `scripts/prestart.sh` com `alembic upgrade head` (LF, senão quebra no container)
+- [x] Testes com SQLite in-memory
+- [ ] Commit
 
-## Fase 5 — Backend: persistência ⬜
+## Fase 6 — Backend: agente 🟡
 
-- [ ] `Database`, `RequisitionTable`, `RequisitionItemTable`, `RequisitionTableMapper`
-- [ ] `SqlModelRequisitionRepository`, `SqlModelUnitOfWork`
-- [ ] Alembic (`migrations/`, `script.py.mako` com `sqlmodel.sql.sqltypes`) e primeira migration revisada
-- [ ] `scripts/prestart.sh` com `alembic upgrade head`
-- [ ] Testes com SQLite in-memory
-
-## Fase 6 — Backend: agente ⬜
-
-- [ ] `McpToolsGateway` (cliente MCP v2, timeout)
-- [ ] `McpToolSchemaConverter`, `ToolCallExecutor`, `OpenAIErrorTranslator`
-- [ ] `SystemPrompt` (pt-BR, regra de tradução notebook → laptop)
-- [ ] `OpenRouterPurchasingAgent` (loop, limite de iterações, saída estruturada)
-- [ ] Testes do conversor e do executor sem rede
+- [x] Port `CatalogToolsGateway` + schemas `ToolDefinition`, `ToolResult`, `CatalogProductPayload` em `schemas/tools/`
+- [x] `McpToolsGateway` (cliente MCP v2, timeout, falha de conexão → `ToolsUnavailableError`, desembrulha o `ExceptionGroup` do anyio)
+- [x] `McpToolSchemaConverter`, `ProductSnapshotMapper`, `ToolCallExecutor`, `OpenAIErrorTranslator`
+- [x] `SystemPrompt` (pt-BR, tradução, termos curtos, sempre buscar antes de dizer "não encontrado", quantidade mínima)
+- [x] `OpenRouterPurchasingAgent` (loop, limite de iterações, saída estruturada strict, `require_parameters`)
+- [x] Testes sem rede: OpenRouter simulada com `httpx2.MockTransport`, MCP em memória, gateway falso
+- [x] Smoke real (agente + MCP + OpenRouter + Postgres): notebooks ✅, ferrari → nada salvo (agora busca antes) ✅, Samsung + mouse → parcial com produto real ✅, idempotência ✅, MCP fora → `ToolsUnavailableError` ✅, modelo inválido → `LLMConfigurationError` ✅
+- [ ] Commit
 
 ## Fase 7 — Backend: HTTP ⬜
 
@@ -146,7 +157,7 @@ Legenda: ✅ feito · 🟡 em andamento / feito sem commit · ⬜ falta · ⭐ o
 
 ## Fase 9 — Chat (Next.js) ⬜
 
-- [ ] Confirmar com o usuário o estilo do frontend (componentes como funções, lógica em classes)
+- [x] Estilo decidido: componentes como funções, lógica em classes
 - [ ] Route Handler BFF (`/api/requisicoes`) com timeout
 - [ ] Chat com estados: enviando, sucesso (Requisição nº, itens, total), 422 (o que falta), 5xx (`detail`)
 - [ ] `ToolCallList` (diferencial)
@@ -178,7 +189,7 @@ Legenda: ✅ feito · 🟡 em andamento / feito sem commit · ⬜ falta · ⭐ o
 
 ## Fase 13 — ⭐ `criar_requisicao` (só se sobrar tempo) ⬜
 
-- [ ] Decidir: o MCP chama um endpoint interno do backend, ou o MCP grava direto no Postgres
+- [x] Desenho decidido: o MCP chama um endpoint interno do backend (só começa depois do README)
 - [ ] Implementar e ajustar o prompt e o grounding
 
 ---
@@ -187,9 +198,9 @@ Legenda: ✅ feito · 🟡 em andamento / feito sem commit · ⬜ falta · ⭐ o
 
 | Quando | O quê |
 |---|---|
-| Hoje, até 19h | ~~Aprovar e commitar setup + MCP~~ (feito); validar o modelo; schemas e domínio do backend |
-| Hoje, 19h–21h | Casos de uso, persistência e agente |
-| Hoje, 21h–23h | HTTP e integração Docker (**pedido de exemplo funcionando**) |
+| Hoje, até 21h45 | ~~Setup + MCP; validar o modelo; schemas e domínio do backend~~ (feito e commitado) |
+| Hoje, 21h45–23h30 | Casos de uso, persistência e agente (**atrasado ~2h45 em relação ao plano**) |
+| Amanhã, até 8h | HTTP e integração Docker (**pedido de exemplo funcionando**) |
 | Amanhã, 8h–11h | Chat Next.js |
 | Amanhã, 11h–13h | CI e evals |
 | Amanhã, 13h–15h | README e teste em clone limpo |
@@ -209,15 +220,15 @@ Legenda: ✅ feito · 🟡 em andamento / feito sem commit · ⬜ falta · ⭐ o
 | Testes e lint via estágio `test` do Dockerfile | Nada instalado no host; CI igual ao local | Rebuild da camada de código a cada execução |
 | pgAdmin com servidor pré-registrado | Inspeção do banco sem configuração manual | Um serviço extra no compose |
 | MCP stateless com retry só em falha transitória | Escala horizontal; resiliência a DummyJSON instável | Pior caso ≈ 3 × timeout |
-| Um commit por arquivo, rodado pelo usuário no próprio terminal | Histórico granular, sem o coautor que o Cursor injeta nos commits do agente | Histórico longo (89 commits só no setup + MCP) |
+| Um commit por arquivo, rodado pelo usuário no próprio terminal | Histórico granular, sem o coautor que o Cursor injeta nos commits do agente | Histórico longo (155 commits até a Fase 3) |
 
 ## Decisões pendentes (consultar o usuário)
 
 - [x] ~~Quando commitar o que já está pronto~~ (feito)
-- [ ] Como commitar as próximas peças: script gerado por mim e rodado por você, como desta vez
-- [ ] Formato do dinheiro na API do backend: objeto `Money` ou string
-- [ ] Estilo do frontend (classes onde der vs. idioma React)
-- [ ] Fazer ou não a terceira tool `criar_requisicao`, e com qual desenho
+- [x] ~~Como commitar as próximas peças~~: script `.ps1` gerado pelo agente e rodado pelo usuário (usado nos dois lotes)
+- [x] ~~Formato do dinheiro na API~~: objeto `{"amount": "1999.99", "currency": "USD"}`, igual ao MCP
+- [x] ~~Estilo do frontend~~: componentes como funções (padrão React), lógica em classes (cliente da API, formatadores, tradutor de erros)
+- [x] ~~Terceira tool `criar_requisicao`~~: só se sobrar tempo depois do README, com o MCP chamando um endpoint interno do backend
 - [x] ~~`buscar_produtos` sem `minimum_order_quantity`~~: campo incluído no resumo da busca (testado e conferido contra a DummyJSON real)
 
 ## Riscos
@@ -228,5 +239,5 @@ Legenda: ✅ feito · 🟡 em andamento / feito sem commit · ⬜ falta · ⭐ o
 | Modelo inventar produtos ou responder sem consultar o catálogo | Visto na Fase 2; o grounding descarta ids não observados; o prompt da Fase 6 vai exigir busca antes de "não encontrado" |
 | Chave com orçamento limitado | Modelo barato; evals só quando necessário |
 | `docker compose up` falhar na máquina do avaliador | Teste em clone limpo; fail-fast no `.env`; healthchecks |
-| Prazo | Marco da Fase 8 hoje; diferenciais só depois do fluxo completo |
+| Prazo (cronograma ~2h45 atrasado em 10/11 às 21h45) | Marco da Fase 8 até amanhã cedo; diferenciais só depois do fluxo completo |
 | Termos em português sem resultado na DummyJSON (`notebook` = 0) | Regra de tradução no prompt + caso nos evals |
