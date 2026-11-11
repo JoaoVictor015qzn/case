@@ -11,6 +11,7 @@ from app.infrastructure.persistence.mappers.requisition_table_mapper import (
 from app.infrastructure.persistence.sqlmodel_unit_of_work import SqlModelUnitOfWork
 
 
+# SQLite em memória com conexão única (StaticPool) e as tabelas criadas.
 @pytest.fixture
 def database() -> Iterator[Database]:
     engine = create_engine(
@@ -21,6 +22,7 @@ def database() -> Iterator[Database]:
     engine.dispose()
 
 
+# Unit of Work real do SQLModel sobre o banco de teste.
 @pytest.fixture
 def unit_of_work(database: Database) -> SqlModelUnitOfWork:
     return SqlModelUnitOfWork(database, RequisitionTableMapper())
