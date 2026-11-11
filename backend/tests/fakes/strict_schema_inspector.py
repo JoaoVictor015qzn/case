@@ -4,6 +4,7 @@ from typing import Any
 class StrictSchemaInspector:
     """Encontra construções que o json_schema strict da OpenAI recusa."""
 
+    # Lista os caminhos onde "$ref" aparece junto de outras chaves no mesmo nó.
     @classmethod
     def refs_with_siblings(cls, node: Any, path: str = "$") -> list[str]:
         if isinstance(node, list):
