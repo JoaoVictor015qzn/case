@@ -9,3 +9,5 @@ include:
     env_file: .env
   - path: backend/compose.yml
     env_file: .env
+  - path: frontend/compose.yml
+    env_file: .env
