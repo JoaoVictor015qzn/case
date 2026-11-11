@@ -25,11 +25,13 @@ class RequisitionDraft(BaseModel):
     missing: list[str] = Field(description="O que não foi possível atender e por quê.")
     message: str = Field(description="Resposta curta ao usuário, em português.")
 
+    # Converte o teto em float do LLM para Budget com Money (via str, sem erro de float).
     def budget(self) -> Budget | None:
         if self.max_unit_price is None:
             return None
         return Budget(max_unit_price=Money(amount=Decimal(str(self.max_unit_price))))
 
+    # Gera o parâmetro de saída estruturada (json_schema strict) enviado à OpenRouter.
     @classmethod
     def response_format(cls) -> dict[str, Any]:
         return {
