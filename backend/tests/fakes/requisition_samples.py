@@ -6,9 +6,12 @@ from app.schemas.requisition.requisition_status import RequisitionStatus
 from tests.fakes.sample_snapshots import SampleSnapshots
 
 
+# Requisições prontas para testes de persistência, listagem e API.
 class RequisitionSamples:
+    # Instante base fixo para datas de criação determinísticas.
     START = datetime(2026, 11, 10, 12, tzinfo=UTC)
 
+    # Requisição parcial com 1 MacBook e 2 Lenovos e um item faltante.
     @classmethod
     def two_laptops(
         cls, idempotency_key: str | None = None, minutes_after_start: int = 0
