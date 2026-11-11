@@ -15,9 +15,11 @@ class CatalogToolsGateway(ABC):
     como ToolResult(is_error=True) para o modelo decidir o próximo passo.
     """
 
+    # Abre a conexão com o servidor de ferramentas
     @abstractmethod
     async def __aenter__(self) -> Self: ...
 
+    # Fecha a conexão com o servidor de ferramentas
     @abstractmethod
     async def __aexit__(
         self,
@@ -26,8 +28,10 @@ class CatalogToolsGateway(ABC):
         traceback: TracebackType | None,
     ) -> None: ...
 
+    # Lista as ferramentas disponíveis para oferecer ao modelo
     @abstractmethod
     async def list_tools(self) -> list[ToolDefinition]: ...
 
+    # Executa uma ferramenta pelo nome com os argumentos escolhidos pelo modelo
     @abstractmethod
     async def call_tool(self, name: str, arguments: dict[str, JsonValue]) -> ToolResult: ...
