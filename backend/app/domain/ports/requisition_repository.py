@@ -3,6 +3,7 @@ from abc import ABC, abstractmethod
 from app.schemas.requisition.requisition import Requisition
 
 
+# Porta de persistência das requisições
 class RequisitionRepository(ABC):
     @abstractmethod
     def add(self, requisition: Requisition) -> Requisition:
