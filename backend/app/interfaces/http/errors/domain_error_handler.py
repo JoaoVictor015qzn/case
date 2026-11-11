@@ -13,6 +13,8 @@ from app.domain.errors.llm_configuration_error import LLMConfigurationError
 from app.domain.errors.llm_timeout_error import LLMTimeoutError
 from app.domain.errors.llm_unavailable_error import LLMUnavailableError
 from app.domain.errors.requisition_not_fulfillable_error import RequisitionNotFulfillableError
+from app.domain.errors.requisition_not_saved_error import RequisitionNotSavedError
+from app.domain.errors.requisition_rejected_error import RequisitionRejectedError
 from app.domain.errors.tools_unavailable_error import ToolsUnavailableError
 from app.schemas.api.error_response import ErrorResponse
 from app.schemas.api.tool_call_public import ToolCallPublic
@@ -23,9 +25,12 @@ logger = logging.getLogger(__name__)
 class DomainErrorHandler:
     """Único ponto de tradução erro de domínio -> HTTP."""
 
+    # Status HTTP de cada erro: 422 negócio, 409 duplicado, 502/503/504 dependências externas.
     STATUS_BY_ERROR: ClassVar[dict[type[DomainError], int]] = {
         RequisitionNotFulfillableError: 422,
+        RequisitionRejectedError: 422,
         DuplicateIdempotencyKeyError: 409,
+        RequisitionNotSavedError: 502,
         LLMUnavailableError: 502,
         LLMConfigurationError: 502,
         AgentOutputError: 502,
@@ -34,11 +39,14 @@ class DomainErrorHandler:
         CatalogUnavailableError: 503,
         LLMTimeoutError: 504,
     }
+    # Status usado para erro de domínio sem entrada no mapa.
     DEFAULT_STATUS: ClassVar[int] = 500
 
+    # Registra o handler para todas as subclasses de DomainError.
     def register(self, app: FastAPI) -> None:
         app.add_exception_handler(DomainError, self.handle)
 
+    # Mapeia o erro para o status HTTP, loga e devolve o corpo padrão de erro.
     async def handle(self, request: Request, exc: Exception) -> JSONResponse:
         if not isinstance(exc, DomainError):
             raise exc
@@ -48,12 +56,20 @@ class DomainErrorHandler:
         )
         return JSONResponse(status_code=status, content=self._body(exc).model_dump(mode="json"))
 
+    # Monta o corpo; pedido não atendível ou não gravado também leva o trace das ferramentas.
     @staticmethod
     def _body(exc: DomainError) -> ErrorResponse:
         if isinstance(exc, RequisitionNotFulfillableError):
             return ErrorResponse(
                 detail=exc.agent_message,
                 missing=list(exc.missing),
+                tool_calls=[ToolCallPublic.from_domain(trace) for trace in exc.tool_calls],
+            )
+        if isinstance(exc, RequisitionRejectedError):
+            return ErrorResponse(detail=exc.detail)
+        if isinstance(exc, RequisitionNotSavedError):
+            return ErrorResponse(
+                detail=exc.user_message,
                 tool_calls=[ToolCallPublic.from_domain(trace) for trace in exc.tool_calls],
             )
         return ErrorResponse(detail=exc.user_message)
