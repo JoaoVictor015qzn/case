@@ -5,6 +5,7 @@ from app.schemas.pricing.money import Money
 from app.schemas.requisition.requisition_item import RequisitionItem
 
 
+# Item da requisição como a API expõe ao chat, com o subtotal da linha.
 class RequisitionItemPublic(ApiModel):
     product_id: int
     title: str
@@ -12,6 +13,7 @@ class RequisitionItemPublic(ApiModel):
     quantity: int
     line_total: Money
 
+    # Converte o item do domínio no DTO da API.
     @classmethod
     def from_domain(cls, item: RequisitionItem) -> Self:
         return cls(
