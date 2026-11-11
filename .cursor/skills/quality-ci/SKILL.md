@@ -76,7 +76,7 @@ jobs:
       - uses: actions/checkout@v4
       - run: cp .env.example .env
       - run: docker compose --profile test run --rm ${{ matrix.service }}-tests
-        env: { OPENROUTER_API_KEY: dummy, OPENROUTER_MODEL: dummy, POSTGRES_PASSWORD: dummy }
+        env: { OPENROUTER_API_KEY: dummy, OPENROUTER_MODEL: dummy, POSTGRES_PASSWORD: dummy, INTERNAL_API_TOKEN: dummy-internal-token }
   frontend:
     runs-on: ubuntu-latest
     defaults:
@@ -95,8 +95,10 @@ jobs:
       - uses: actions/checkout@v4
       - run: cp .env.example .env
       - run: docker compose config -q
-        env: { OPENROUTER_API_KEY: dummy, OPENROUTER_MODEL: dummy, POSTGRES_PASSWORD: dummy }
+        env: { OPENROUTER_API_KEY: dummy, OPENROUTER_MODEL: dummy, POSTGRES_PASSWORD: dummy, INTERNAL_API_TOKEN: dummy-internal-token }
 ```
+
+Implementado em `.github/workflows/ci.yml` com as variáveis no `env` do workflow, `actions/checkout@v6` e `actions/setup-node@v6`.
 
 O CI roda os mesmos containers de teste que rodam localmente: o que passa na máquina passa no CI. Use a versão mais recente de cada action no momento de criar o workflow.
 
@@ -130,8 +132,12 @@ ALL = [
 
 Rodar com o ambiente no ar: `docker compose run --rm backend-tests python -m evals.run_evals` (apontando `EVALS_BASE_URL=http://backend:8000`).
 
+Implementado com mais três classes: `EvalSettings` (prefixo `EVALS_`, `min_passed=4`), `CatalogProduct` e `CatalogReference`, que consulta a DummyJSON direto (a resposta da API não traz categoria). O estágio `test` do Dockerfile copia `evals/`, e o `EvalChecker` tem testes em `tests/evals/`.
+
 Um caso conta como acerto quando:
 - o status HTTP é o esperado;
+- título e preço de cada item batem com a DummyJSON;
+- a requisição passou por `criar_requisicao`;
 - todos os itens são da categoria esperada;
 - a soma das quantidades bate com o pedido;
 - todo `unit_price` respeita o orçamento;
