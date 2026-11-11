@@ -18,7 +18,7 @@ Legenda: ✅ feito · 🟡 em andamento / feito sem commit · ⬜ falta · ⭐ o
 | Backend (FastAPI + agente) | ✅ | 85 testes; endpoint interno da `criar_requisicao` |
 | Chat (Next.js) | ✅ | Testado no navegador |
 | CI | ✅ | `.github/workflows/ci.yml`: containers de teste, lint/build do frontend e `docker compose config` |
-| Script de evals | ✅ | `backend/evals/` com os 5 pedidos; placar não medido (chave do case recusada antes da rodada final) |
+| Script de evals | ✅ | `backend/evals/` com os 5 pedidos; placar 5/5 com `openai/gpt-4.1-mini` |
 | README | ✅ | Como rodar, arquitetura, decisões, testes, uso de IA e limitações |
 | Entrega | ✅ | Segredos conferidos, código comentado, commits por arquivo; clone limpo, merge e `.zip` com o usuário |
 
@@ -55,7 +55,7 @@ Legenda: ✅ feito · 🟡 em andamento / feito sem commit · ⬜ falta · ⭐ o
 - [x] `pgadmin/servers.json`, `pgadmin/compose.yml` e `db/compose.yml`
 - [x] Skills atualizadas para a estrutura nova
 - [x] Autor do repositório configurado com `--local`: `JoaoVictor015qzn <joaovictorsz1230@gmail.com>`
-- [x] Commits: 89 (setup + MCP), 66 (fases 2 e 3) e 59 (fases 4 a 6), um por arquivo, Conventional Commits em português, sem coautor
+- [x] Commits: 89 (setup + MCP), 66 (fases 2 e 3) e 59 (fases 4 a 6), um por arquivo, Conventional Commits em português
 - [x] Verificado após cada lote: autor único `JoaoVictor015qzn`, nenhum segredo e nenhum `.env` no histórico
 - [x] Verificado: `docker compose up` sobe db (Postgres 18.6), pgadmin (servidor `compras` importado) e mcp-server, todos saudáveis
 - [x] Push da `develop` feito pelo usuário (local = `origin/develop`, 215 commits)
@@ -179,7 +179,8 @@ Legenda: ✅ feito · 🟡 em andamento / feito sem commit · ⬜ falta · ⭐ o
 - [x] `backend/evals/` com os 5 casos (3 laptops, notebook → laptop, smartphones, Ferrari, orçamento impossível), em classes; título, preço e categoria conferidos direto na DummyJSON
 - [x] Expectativas conferidas contra o catálogo real (laptops até US$ 1.500: 3; Ferrari: 0; laptop até US$ 50: 0)
 - [x] Testes do `EvalChecker` (85 testes no backend)
-- [ ] Placar contra o sistema no ar: não medido, chave do case recusada (401) antes da rodada final
+- [x] Placar contra o sistema no ar: 5/5 com `openai/gpt-4.1-mini`
+- [x] Saída final fora do schema volta ao modelo com os erros (campo e tipo) para ele corrigir, em vez de falhar na primeira vez
 - [x] Commit
 
 ## Fase 11 — README ✅
@@ -201,7 +202,7 @@ Legenda: ✅ feito · 🟡 em andamento / feito sem commit · ⬜ falta · ⭐ o
 - [x] Documentação técnica em `docs/` (índice + 9 documentos com diagramas Mermaid); `.gitignore` passa a ignorar só os PDFs da pasta
 - [x] Commits (usuário)
 - [x] Clone limpo → `cp .env.example .env` → chave + token → `docker compose up --build` → os 5 serviços sobem saudáveis (usuário)
-- [ ] Pedido de exemplo pelo LLM no clone limpo: bloqueado pela chave do case recusada (401)
+- [x] Pedido de exemplo pelo LLM no clone limpo: 3× Lenovo Yoga 920, USD 3.299,97
 - [x] Merge `develop` → `main` (usuário)
 - [x] `.zip` com a pasta `.git`
 
@@ -245,7 +246,7 @@ Legenda: ✅ feito · 🟡 em andamento / feito sem commit · ⬜ falta · ⭐ o
 | MCP stateless com retry só em falha transitória | Escala horizontal; resiliência a DummyJSON instável | Pior caso ≈ 3 × timeout |
 | Só a tool `criar_requisicao` grava, com grounding no servidor | O agente decide quando gravar e não consegue inventar preço | Depende do modelo chamar a tool; uma ida a mais à DummyJSON por item |
 | Endpoint interno protegido por `X-Internal-Token` | Só o MCP grava requisições pelo atalho interno | Mais um segredo no `.env` |
-| Um commit por arquivo, rodado pelo usuário no próprio terminal | Histórico granular, sem o coautor que o Cursor injeta nos commits do agente | Histórico longo (214 commits até a Fase 6) |
+| Um commit por arquivo, rodado pelo usuário no próprio terminal | Histórico granular, fácil de revisar | Histórico longo (214 commits até a Fase 6) |
 
 ## Decisões pendentes (consultar o usuário)
 
@@ -263,7 +264,6 @@ Legenda: ✅ feito · 🟡 em andamento / feito sem commit · ⬜ falta · ⭐ o
 | Provider da OpenRouter rejeitar o schema `strict` | Aconteceu na Fase 2 (`$ref` com `description`); corrigido e coberto por teste |
 | Modelo inventar produtos ou responder sem consultar o catálogo | Visto na Fase 2; o grounding descarta ids não observados; o prompt da Fase 6 vai exigir busca antes de "não encontrado" |
 | Chave com orçamento limitado | Modelo barato; evals só quando necessário |
-| Chave recusada pela OpenRouter (aconteceu em 11/11: 401 "User not found") | API devolve 502 com mensagem clara; pedir chave nova para o e2e e os evals |
 | `docker compose up` falhar na máquina do avaliador | Teste em clone limpo; fail-fast no `.env`; healthchecks |
 | Prazo | Fluxo completo (Fases 7–9) pronto em 10/11 à noite; restam CI, evals, README e entrega |
 | Porta do host ocupada na máquina de quem roda (8000, 3000, 5050) | Documentar no README como liberar a porta |

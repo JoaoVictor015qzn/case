@@ -85,7 +85,7 @@ Um único `DomainErrorHandler` traduz erros de domínio em respostas no formato 
 | `RequisitionNotSavedError` | 502 | O modelo terminou sem gravar |
 | `LLMConfigurationError` | 502 | Chave recusada (401), sem crédito (402) ou modelo inválido |
 | `LLMUnavailableError` | 502 | OpenRouter fora ou 5xx |
-| `AgentOutputError` | 502 | Resposta final fora do schema |
+| `AgentOutputError` | 502 | Resposta final fora do schema mesmo depois de o agente devolver os erros (campo e tipo) ao modelo para correção, até o fim das rodadas |
 | `AgentIterationLimitError` | 502 | Loop passou do limite de rodadas |
 | `ToolsUnavailableError` / `CatalogUnavailableError` | 503 | MCP ou catálogo fora |
 | `LLMTimeoutError` | 504 | Modelo demorou mais que `LLM_TIMEOUT_S` |

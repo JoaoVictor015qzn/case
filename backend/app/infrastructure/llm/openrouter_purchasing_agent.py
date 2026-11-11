@@ -68,6 +68,7 @@ class OpenRouterPurchasingAgent(PurchasingAgent):
             conversation: list[ResponseInputItemParam] = [
                 EasyInputMessageParam(role="user", content=request.request_text)
             ]
+            output_error: AgentOutputError | None = None
             # Laço do agente: limitado a max_iterations turnos de chamada ao modelo.
             for _ in range(self._max_iterations):
                 response = await self._ask_model(conversation, tools)
@@ -76,10 +77,20 @@ class OpenRouterPurchasingAgent(PurchasingAgent):
                 calls = [i for i in response.output if isinstance(i, ResponseFunctionToolCall)]
                 # Sem function_call o modelo terminou: valida a saída estruturada e encerra.
                 if not calls:
-                    return executor.finish(self._parse_draft(response))
+                    try:
+                        return executor.finish(self._parse_draft(response))
+                    # Saída fora do schema volta ao modelo com os erros para ele corrigir.
+                    except AgentOutputError as error:
+                        output_error = error
+                        conversation.append(self._correction_request(error))
+                        continue
+                output_error = None
                 # Despacha cada function_call e anexa o resultado como function_call_output.
                 for call in calls:
                     conversation.append(await executor.execute(call))
+            # Se a última resposta veio fora do schema, esse é o erro que explica a falha.
+            if output_error is not None:
+                raise output_error
         raise AgentIterationLimitError(self._max_iterations)
 
     # Chama a Responses API com prompt, ferramentas e formato json_schema do rascunho.
@@ -121,8 +132,25 @@ class OpenRouterPurchasingAgent(PurchasingAgent):
             raise AgentOutputError(f"status={response.status}")
         try:
             return RequisitionDraft.model_validate_json(response.output_text)
+        # Detalhe com campo e tipo de cada erro, sem os valores, para log e correção.
         except ValidationError as error:
-            raise AgentOutputError(f"rascunho inválido: {error.error_count()} erro(s)") from error
+            problems = "; ".join(
+                f"{'.'.join(str(part) for part in item['loc']) or 'json'}: {item['type']}"
+                for item in error.errors(include_url=False)
+            )
+            raise AgentOutputError(f"rascunho inválido: {problems}") from error
+
+    # Mensagem que devolve ao modelo os erros da resposta final e pede só o JSON corrigido.
+    @staticmethod
+    def _correction_request(error: AgentOutputError) -> EasyInputMessageParam:
+        return EasyInputMessageParam(
+            role="user",
+            content=(
+                f"Sua resposta final não seguiu o formato exigido ({error.detail}). "
+                "Responda de novo só com o JSON no formato pedido, sem repetir ferramentas "
+                "que já deram certo."
+            ),
+        )
 
     # Registra no log o consumo de tokens da resposta, quando informado.
     @staticmethod
