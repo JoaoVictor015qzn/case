@@ -10,12 +10,14 @@ class RequisitionItemTable(SQLModel, table=True):
     """Snapshot do produto no momento da compra: o catálogo pode mudar depois."""
 
     __tablename__ = "requisition_item"
+    # Restrições no banco: quantidade positiva e preço unitário não negativo.
     __table_args__ = (
         CheckConstraint("quantity > 0", name="ck_requisition_item_quantity_positive"),
         CheckConstraint("unit_price >= 0", name="ck_requisition_item_unit_price_non_negative"),
     )
 
     id: int | None = Field(default=None, primary_key=True)
+    # Chave estrangeira obrigatória para a requisição, removida em cascata.
     requisition_id: int | None = Field(
         default=None,
         foreign_key="requisition.id",
