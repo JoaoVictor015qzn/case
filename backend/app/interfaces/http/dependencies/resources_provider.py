@@ -5,9 +5,12 @@ from fastapi import Depends, Request
 from app.interfaces.http.dependencies.application_resources import ApplicationResources
 
 
+# Entrega aos endpoints os recursos guardados em app.state pelo lifespan.
 class ResourcesProvider:
+    # Atributo de app.state onde o lifespan guarda os ApplicationResources.
     STATE_KEY = "resources"
 
+    # Lê os recursos do app.state; falha se o lifespan não os tiver criado.
     @classmethod
     def get(cls, request: Request) -> ApplicationResources:
         resources = getattr(request.app.state, cls.STATE_KEY, None)
@@ -16,4 +19,5 @@ class ResourcesProvider:
         return resources
 
 
+# Tipo anotado para injetar os recursos nos endpoints via Depends.
 ResourcesDep = Annotated[ApplicationResources, Depends(ResourcesProvider.get)]
