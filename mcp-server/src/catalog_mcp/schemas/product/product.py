@@ -3,6 +3,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from catalog_mcp.schemas.pricing.money import Money
 
 
+# Entidade Produto do contexto Catálogo, independente do formato da DummyJSON.
 class Product(BaseModel):
     model_config = ConfigDict(frozen=True)
 
