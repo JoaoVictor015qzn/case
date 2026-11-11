@@ -4,6 +4,7 @@ from catalog_mcp.schemas.pricing.money import Money
 from catalog_mcp.schemas.product.product import Product
 
 
+# Produtos de exemplo (ids reais da DummyJSON) usados pelo catálogo falso.
 class SampleProducts:
     MACBOOK = Product(
         id=78,
@@ -22,6 +23,7 @@ class SampleProducts:
         stock=40,
     )
 
+    # Todos os produtos de exemplo, para popular o catálogo.
     @classmethod
     def all(cls) -> list[Product]:
         return [cls.MACBOOK, cls.LENOVO]
