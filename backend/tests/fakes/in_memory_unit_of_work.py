@@ -14,11 +14,13 @@ class InMemoryUnitOfWork(UnitOfWork):
         self.commits = 0
         self._repository = InMemoryRequisitionRepository(self.committed)
 
+    # Abre uma "transação" nova com repositório sem pendências.
     def __enter__(self) -> Self:
         self._repository = InMemoryRequisitionRepository(self.committed)
         self.requisitions = self._repository
         return self
 
+    # Descarta o que não teve commit, como um rollback.
     def __exit__(
         self,
         exc_type: type[BaseException] | None,
@@ -27,6 +29,7 @@ class InMemoryUnitOfWork(UnitOfWork):
     ) -> None:
         self._repository.pending.clear()
 
+    # Efetiva as pendências e conta quantos commits ocorreram.
     def commit(self) -> None:
         self.committed.extend(self._repository.pending)
         self._repository.pending.clear()
