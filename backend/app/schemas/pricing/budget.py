@@ -10,5 +10,6 @@ class Budget(BaseModel):
 
     max_unit_price: Money
 
+    # Aceita o preço unitário se ele não passar do teto do orçamento.
     def allows(self, unit_price: Money) -> bool:
         return not unit_price.exceeds(self.max_unit_price)
