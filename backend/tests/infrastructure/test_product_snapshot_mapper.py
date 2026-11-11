@@ -6,18 +6,21 @@ from tests.fakes.sample_snapshots import SampleSnapshots
 mapper = ProductSnapshotMapper()
 
 
+# Todos os produtos de um resultado de busca viram snapshots observados.
 def test_reads_every_product_of_a_search() -> None:
     result = CatalogToolResults.search(SampleSnapshots.MACBOOK, SampleSnapshots.LENOVO)
 
     assert mapper.from_tool_result(result) == [SampleSnapshots.MACBOOK, SampleSnapshots.LENOVO]
 
 
+# O resultado de detalhar_produto vira um único snapshot.
 def test_reads_a_product_detail() -> None:
     result = CatalogToolResults.detail(SampleSnapshots.IPHONE_6)
 
     assert mapper.from_tool_result(result) == [SampleSnapshots.IPHONE_6]
 
 
+# Produto incompleto (sem preço) é ignorado em vez de quebrar a leitura.
 def test_ignores_malformed_products() -> None:
     result = ToolResult(
         is_error=False,
@@ -28,5 +31,6 @@ def test_ignores_malformed_products() -> None:
     assert mapper.from_tool_result(result) == []
 
 
+# Resultado de erro de tool não registra nenhum produto observado.
 def test_error_results_observe_nothing() -> None:
     assert mapper.from_tool_result(CatalogToolResults.error("falhou")) == []
