@@ -6,6 +6,7 @@ from catalog_mcp.schemas.pricing.money import Money
 from catalog_mcp.schemas.product.product import Product
 
 
+# Resumo de produto em cada item da lista devolvida por buscar_produtos.
 class ProductSummary(BaseModel):
     model_config = ConfigDict(frozen=True)
 
@@ -17,6 +18,7 @@ class ProductSummary(BaseModel):
     minimum_order_quantity: int = Field(description="Quantidade mínima por pedido.")
     availability_status: str | None = None
 
+    # Converte a entidade Product no resumo, descartando os campos extras.
     @classmethod
     def from_product(cls, product: Product) -> Self:
         return cls.model_validate(product.model_dump())
