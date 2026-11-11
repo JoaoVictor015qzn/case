@@ -7,6 +7,8 @@ cp .env.example .env        # preencha OPENROUTER_API_KEY e INTERNAL_API_TOKEN
 docker compose up --build
 ```
 
+A `OPENROUTER_API_KEY` precisa ser válida e ter crédito. A chave enviada com o case passou a ser recusada (401 "User not found") antes da entrega; confira a sua com `curl https://openrouter.ai/api/v1/key -H "Authorization: Bearer SUA_CHAVE"`.
+
 O `.env` precisa ficar na raiz do projeto, ao lado do `compose.yml`.
 
 ## Variáveis de ambiente (`.env`)
@@ -73,6 +75,8 @@ Um caso só conta como acerto se:
 - a requisição passou por `criar_requisicao`.
 
 Imprime `N/5 acertos` com o motivo de cada falha e sai com código 1 abaixo de `EVALS_MIN_PASSED` (padrão 4).
+
+Placar: não medido na entrega, porque a chave do case passou a ser recusada antes da rodada final.
 
 ## Solução de problemas
 
