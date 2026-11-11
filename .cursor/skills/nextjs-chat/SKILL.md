@@ -19,7 +19,7 @@ Browser ──fetch('/api/requisicoes')──► Next.js Route Handler (server) 
 
 ## Estrutura
 
-Mesma filosofia do backend: um componente ou classe por arquivo, tipos de dados separados por assunto em `lib/types/`. Componentes React continuam sendo funções (é o idioma do React); a lógica fora dos componentes (cliente HTTP, formatação) fica em classes. Confirmar com o usuário antes de começar o frontend.
+Mesma filosofia do backend: um componente ou classe por arquivo, tipos de dados separados por assunto em `lib/types/`. Componentes React continuam sendo funções (é o idioma do React); a lógica fora dos componentes (cliente HTTP, formatação, tradução de erros) fica em classes. Estilo decidido com o usuário.
 
 ```
 frontend/src/
@@ -90,9 +90,10 @@ Regras:
 ## Tipos (espelham o backend)
 
 ```ts
-// formato do dinheiro na API (string "1999.99" ou Money { amount, currency }) a definir junto com o backend
-export type RequisitionItem = { productId: number; title: string; unitPrice: string; quantity: number; lineTotal: string };
-export type Requisition = { id: number; status: "complete" | "partial"; items: RequisitionItem[]; total: string; currency: "USD"; createdAt: string };
+// dinheiro chega como objeto, com amount em string decimal (nunca converter para number para somar)
+export type Money = { amount: string; currency: "USD" };
+export type RequisitionItem = { productId: number; title: string; unitPrice: Money; quantity: number; lineTotal: Money };
+export type Requisition = { id: number; status: "complete" | "partial"; items: RequisitionItem[]; total: Money; createdAt: string };
 export type ToolCall = { name: string; arguments: Record<string, unknown>; isError: boolean; durationMs: number };
 export type CreateRequisitionResponse = { requisition: Requisition; message: string; missing: string[]; toolCalls: ToolCall[] };
 export type ApiError = { detail: string; missing?: string[]; toolCalls?: ToolCall[] };
