@@ -7,6 +7,7 @@ from app.schemas.product.product_snapshot import ProductSnapshot
 class CatalogProductPayload(BaseModel):
     """Produto no formato que as tools do servidor MCP devolvem (busca e detalhe)."""
 
+    # Ignora campos extras que a tool devolva além dos usados aqui.
     model_config = ConfigDict(frozen=True, extra="ignore")
 
     id: int = Field(ge=1)
@@ -16,6 +17,7 @@ class CatalogProductPayload(BaseModel):
     stock: int = Field(ge=0)
     minimum_order_quantity: int = Field(ge=1)
 
+    # Converte o payload da tool no snapshot de produto usado pelo domínio.
     def to_snapshot(self) -> ProductSnapshot:
         return ProductSnapshot(
             product_id=self.id,
