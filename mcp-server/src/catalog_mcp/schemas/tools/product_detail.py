@@ -6,6 +6,7 @@ from catalog_mcp.schemas.pricing.money import Money
 from catalog_mcp.schemas.product.product import Product
 
 
+# Saída estruturada da tool detalhar_produto, com marca e descrição.
 class ProductDetail(BaseModel):
     model_config = ConfigDict(frozen=True)
 
@@ -19,6 +20,7 @@ class ProductDetail(BaseModel):
     brand: str | None = None
     description: str | None = None
 
+    # Converte a entidade Product no formato de detalhe da tool.
     @classmethod
     def from_product(cls, product: Product) -> Self:
         return cls.model_validate(product.model_dump())
