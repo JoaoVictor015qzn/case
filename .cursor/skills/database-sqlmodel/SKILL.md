@@ -121,6 +121,17 @@ class Database:
 
 **Não use `SQLModel.metadata.create_all()` em produção.** Só é aceitável em testes com SQLite.
 
+## Confirmado na implementação
+
+- `DatabaseSettings` (só `database_url`) em `schemas/settings/`: o `env.py` usa ele, então o Alembic roda sem a chave da OpenRouter. `Settings` herda dele.
+- O `env.py` é uma classe (`MigrationRunner`). As funções `upgrade`/`downgrade` das migrations são a única exceção à regra de "nada de função solta": o Alembic exige.
+- Revisão da migration autogerada: o FK `requisition_id` precisa de `nullable=False` no `Field` (o tipo é `int | None` só antes do flush), e o `downgrade` precisa dropar o enum `requisitionstatus`.
+- Verificação: `alembic upgrade head && alembic check && alembic downgrade base && alembic upgrade head` contra o Postgres do compose.
+- `selectinload(RequisitionTable.items)` não passa no ty (o SQLModel tipa como lista). Use `cast(QueryableAttribute[...], ...)` numa constante da classe do repositório.
+- `list["RequisitionItemTable"]` precisa de aspas (`# noqa: UP037`): o SQLModel resolve a anotação ao criar a classe e o import é circular.
+- O repositório faz `flush()` no `add` para obter o id; violação da chave única vira `DuplicateIdempotencyKeyError` (detectada pelo nome da coluna na mensagem, funciona em Postgres e SQLite).
+- `scripts/prestart.sh` precisa estar em **LF**: os arquivos criados no Windows saem em CRLF e o `sh` do container quebra.
+
 ## Inspeção com pgAdmin
 
 http://localhost:5050 → servidor "compras" já registrado (`pgadmin/servers.json`) → senha do `POSTGRES_PASSWORD`.
