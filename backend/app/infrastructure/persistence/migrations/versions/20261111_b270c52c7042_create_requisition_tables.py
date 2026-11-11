@@ -17,10 +17,13 @@ down_revision: str | None = None
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
+# Tipo enum do Postgres usado na coluna requisition.status.
 requisition_status = sa.Enum("COMPLETE", "PARTIAL", name="requisitionstatus")
 
 
+# Cria as tabelas requisition e requisition_item com índices e restrições.
 def upgrade() -> None:
+    # Cabeçalho da requisição; idempotency_key única garante gravação única por chave.
     op.create_table(
         "requisition",
         sa.Column("id", sa.Integer(), nullable=False),
@@ -40,6 +43,7 @@ def upgrade() -> None:
         sa.UniqueConstraint("idempotency_key"),
     )
     op.create_index(op.f("ix_requisition_created_at"), "requisition", ["created_at"], unique=False)
+    # Itens da requisição, apagados em cascata junto com ela.
     op.create_table(
         "requisition_item",
         sa.Column("id", sa.Integer(), nullable=False),
@@ -62,6 +66,7 @@ def upgrade() -> None:
     )
 
 
+# Remove índices, tabelas e o tipo enum, na ordem inversa da criação.
 def downgrade() -> None:
     op.drop_index(op.f("ix_requisition_item_requisition_id"), table_name="requisition_item")
     op.drop_table("requisition_item")
