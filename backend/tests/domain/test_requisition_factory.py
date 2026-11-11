@@ -1,58 +1,35 @@
-import pytest
-
-from app.domain.errors.requisition_not_fulfillable_error import RequisitionNotFulfillableError
-from app.domain.services.grounding_validator import GroundingValidator
 from app.domain.services.requisition_factory import RequisitionFactory
-from app.schemas.agent.draft_status import DraftStatus
+from app.schemas.requisition.requisition_item import RequisitionItem
 from app.schemas.requisition.requisition_status import RequisitionStatus
-from tests.fakes.agent_run_builder import AgentRunBuilder
+from tests.fakes.registration_builder import RegistrationBuilder
 from tests.fakes.sample_snapshots import SampleSnapshots
 
-validator = GroundingValidator()
 factory = RequisitionFactory()
+MACBOOK_ITEM = RequisitionItem.from_snapshot(SampleSnapshots.MACBOOK, 1)
 
 
-def test_creates_complete_requisition_with_agent_message() -> None:
-    run = AgentRunBuilder().observed(SampleSnapshots.MACBOOK).item(78, 1).build()
+# Sem faltantes, a requisição sai completa, com a mensagem do agente e a chave do pedido.
+def test_creates_complete_requisition_with_agent_message_and_key() -> None:
+    registration = RegistrationBuilder("chave-1").line(SampleSnapshots.MACBOOK, 1).build()
 
-    requisition = factory.create("1 macbook", run, validator.validate(run), "chave-1")
+    requisition = factory.create(registration, [MACBOOK_ITEM])
 
     assert requisition.status is RequisitionStatus.COMPLETE
-    assert requisition.agent_message == run.draft.message
+    assert requisition.agent_message == registration.message
     assert requisition.missing == ()
     assert requisition.idempotency_key == "chave-1"
 
 
+# Com itens faltantes informados pelo agente, a requisição fica parcial e os lista.
 def test_is_partial_when_agent_reports_missing() -> None:
-    run = (
-        AgentRunBuilder()
-        .observed(SampleSnapshots.MACBOOK)
-        .item(78, 1)
-        .status(DraftStatus.PARTIAL)
+    registration = (
+        RegistrationBuilder()
+        .line(SampleSnapshots.MACBOOK, 1)
         .missing("Mouse sem fio: não encontrado no catálogo.")
         .build()
     )
 
-    requisition = factory.create("1 macbook e 1 mouse", run, validator.validate(run))
+    requisition = factory.create(registration, [MACBOOK_ITEM])
 
     assert requisition.status is RequisitionStatus.PARTIAL
     assert requisition.missing == ("Mouse sem fio: não encontrado no catálogo.",)
-
-
-def test_rejections_make_it_partial_and_replace_the_message() -> None:
-    run = AgentRunBuilder().observed(SampleSnapshots.MACBOOK).item(78, 1).item(999, 1).build()
-
-    requisition = factory.create("pedido", run, validator.validate(run))
-
-    assert requisition.status is RequisitionStatus.PARTIAL
-    assert requisition.agent_message == RequisitionFactory.ADJUSTED_NOTICE
-    assert len(requisition.missing) == 1
-
-
-def test_raises_when_nothing_is_fulfillable() -> None:
-    run = AgentRunBuilder().status(DraftStatus.UNFULFILLABLE).build()
-
-    with pytest.raises(RequisitionNotFulfillableError) as error:
-        factory.create("uma ferrari", run, validator.validate(run))
-
-    assert error.value.missing == (RequisitionFactory.NOTHING_FOUND,)
