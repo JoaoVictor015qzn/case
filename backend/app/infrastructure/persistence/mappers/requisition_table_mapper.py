@@ -9,6 +9,7 @@ from app.schemas.requisition.requisition_item import RequisitionItem
 class RequisitionTableMapper:
     """Agregado Requisition <-> linhas das tabelas. A tabela nunca sai da persistência."""
 
+    # Converte o agregado em linha da tabela requisition, com os itens como filhos.
     def to_table(self, requisition: Requisition) -> RequisitionTable:
         return RequisitionTable(
             request_text=requisition.request_text,
@@ -22,6 +23,7 @@ class RequisitionTableMapper:
             items=[self._item_to_table(item) for item in requisition.items],
         )
 
+    # Reconstrói o agregado a partir da linha gravada (exige id já atribuído pelo banco).
     def to_domain(self, row: RequisitionTable) -> Requisition:
         if row.id is None:
             raise ValueError("A requisição precisa ser gravada antes de virar agregado.")
@@ -37,6 +39,7 @@ class RequisitionTableMapper:
             created_at=row.created_at,
         )
 
+    # Converte um item em linha de requisition_item; Money vira só o valor decimal.
     @staticmethod
     def _item_to_table(item: RequisitionItem) -> RequisitionItemTable:
         return RequisitionItemTable(
@@ -47,6 +50,7 @@ class RequisitionTableMapper:
             line_total=item.line_total.amount,
         )
 
+    # Reconstrói um item do agregado aplicando a moeda da requisição ao preço.
     @staticmethod
     def _item_to_domain(row: RequisitionItemTable, currency: Currency) -> RequisitionItem:
         return RequisitionItem(
