@@ -1,5 +1,6 @@
 import { Chat } from "@/components/Chat";
 
+// Página inicial: cabeçalho com instruções e o chat do agente de compras.
 export default function Home() {
   return (
     <main className="page">
