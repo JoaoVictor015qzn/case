@@ -4,6 +4,7 @@ from app.schemas.agent.agent_run import AgentRun
 from app.schemas.agent.draft_item import DraftItem
 from app.schemas.agent.draft_status import DraftStatus
 from app.schemas.agent.requisition_draft import RequisitionDraft
+from app.schemas.agent.tool_call_trace import ToolCallTrace
 from app.schemas.product.product_snapshot import ProductSnapshot
 
 
@@ -17,6 +18,7 @@ class AgentRunBuilder:
         self._max_unit_price: float | None = None
         self._missing: list[str] = []
         self._message = "Requisição montada."
+        self._tool_calls: list[ToolCallTrace] = []
 
     def observed(self, *snapshots: ProductSnapshot) -> Self:
         self._observed.update({snapshot.product_id: snapshot for snapshot in snapshots})
@@ -38,6 +40,12 @@ class AgentRunBuilder:
         self._missing.extend(missing)
         return self
 
+    def tool_call(self, name: str, is_error: bool = False) -> Self:
+        self._tool_calls.append(
+            ToolCallTrace(name=name, arguments={}, is_error=is_error, duration_ms=1)
+        )
+        return self
+
     def build(self) -> AgentRun:
         draft = RequisitionDraft(
             status=self._status,
@@ -46,4 +54,6 @@ class AgentRunBuilder:
             missing=self._missing,
             message=self._message,
         )
-        return AgentRun(draft=draft, observed_products=self._observed)
+        return AgentRun(
+            draft=draft, observed_products=self._observed, tool_calls=tuple(self._tool_calls)
+        )
