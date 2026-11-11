@@ -1,0 +1,6 @@
+services:
+  backend-tests:
+    build:
+      context: .
+      target: test
+    profiles: [test]
