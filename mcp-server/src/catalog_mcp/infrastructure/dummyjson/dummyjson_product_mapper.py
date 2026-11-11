@@ -6,6 +6,7 @@ from catalog_mcp.schemas.product.product import Product
 class DummyJsonProductMapper:
     """Camada anticorrupção: traduz o formato da DummyJSON para a entidade Product."""
 
+    # Copia os campos do produto da DummyJSON, envolvendo o preço em Money (USD).
     def to_product(self, source: DummyJsonProduct) -> Product:
         return Product(
             id=source.id,
