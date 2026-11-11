@@ -8,6 +8,7 @@ from app.schemas.requisition.requisition import Requisition
 from app.schemas.requisition.requisition_status import RequisitionStatus
 
 
+# Requisição salva como a API expõe ao chat (camelCase).
 class RequisitionPublic(ApiModel):
     id: int
     request_text: str
@@ -18,6 +19,7 @@ class RequisitionPublic(ApiModel):
     missing: list[str]
     created_at: datetime
 
+    # Converte o agregado em DTO; recusa requisição que ainda não tem id do banco.
     @classmethod
     def from_domain(cls, requisition: Requisition) -> Self:
         if requisition.id is None:
