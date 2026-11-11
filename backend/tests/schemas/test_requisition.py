@@ -10,6 +10,7 @@ from app.schemas.requisition.requisition_status import RequisitionStatus
 from tests.fakes.sample_snapshots import SampleSnapshots
 
 
+# O total da requisição é a soma exata dos totais das linhas, serializado como texto.
 def test_total_sums_line_totals() -> None:
     requisition = Requisition(
         request_text="2 macbooks e 1 lenovo",
@@ -25,6 +26,7 @@ def test_total_sums_line_totals() -> None:
     assert requisition.model_dump(mode="json")["total"] == {"amount": "5099.97", "currency": "USD"}
 
 
+# Requisição sem itens é inválida.
 def test_requires_at_least_one_item() -> None:
     with pytest.raises(ValidationError):
         Requisition(
@@ -35,6 +37,7 @@ def test_requires_at_least_one_item() -> None:
         )
 
 
+# O mesmo produto não pode aparecer em duas linhas da requisição.
 def test_rejects_repeated_product() -> None:
     item = RequisitionItem.from_snapshot(SampleSnapshots.MACBOOK, 1)
 
@@ -47,6 +50,7 @@ def test_rejects_repeated_product() -> None:
         )
 
 
+# with_identity devolve cópia com id e data, sem alterar a requisição original.
 def test_with_identity_sets_id_and_creation_time() -> None:
     requisition = Requisition(
         request_text="1 macbook",
