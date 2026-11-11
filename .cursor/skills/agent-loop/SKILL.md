@@ -39,11 +39,13 @@ Schemas em `schemas/agent/` (Pydantic, `frozen=True`):
 
 ```python
 class OpenRouterPurchasingAgent(PurchasingAgent):
-    def __init__(self, client: AsyncOpenAI, gateway_factory: McpToolsGatewayFactory,
-                 converter: McpToolSchemaConverter, settings: Settings) -> None: ...
+    # Implementado: gateway (CatalogToolsGateway) novo por request, injetado pelo provider;
+    # também recebe ProductSnapshotMapper, OpenAIErrorTranslator, model e max_iterations.
+    def __init__(self, client: AsyncOpenAI, gateway: CatalogToolsGateway,
+                 converter: McpToolSchemaConverter, ...) -> None: ...
 
     async def run(self, request_text: str) -> AgentRun:
-        async with self._gateway_factory.connect() as gateway:
+        async with self._gateway as gateway:
             tools = self._converter.convert(await gateway.list_tools())
             executor = ToolCallExecutor(gateway)
             items: list[ResponseInputItemParam] = [{"role": "user", "content": request_text}]
@@ -81,6 +83,14 @@ Cliente: `AsyncOpenAI(base_url=settings.openrouter_base_url, api_key=settings.op
 3. Se `not result.is_error`, extrai os produtos de `result.structured_content` para os snapshots observados (via um mapper que converte o payload da tool em `ProductSnapshot`; `price` vem como `{"amount": "1999.99", "currency": "USD"}`).
 4. Retorna `{"type": "function_call_output", "call_id": call.call_id, "output": <texto de result.content>}`.
 5. `is_error=True` **não interrompe** o loop: o modelo lê o erro e decide o próximo passo.
+
+## Armadilhas confirmadas na implementação
+
+- O `mcp.Client` roda num task group do anyio: **qualquer exceção levantada dentro do `async with` sai embrulhada em `ExceptionGroup`**. O `McpToolsGateway.__aexit__` desembrulha e re-levanta o erro original, para que o `DomainError` chegue intacto ao handler HTTP. Há teste para isso.
+- `openai` 3.x e `mcp` 2.x usam **`httpx2`**, não `httpx`. Nos testes, `httpx2.MockTransport` simula a OpenRouter (`tests/fakes/scripted_openrouter.py`).
+- Em `strict`, um `$ref` não pode ter `description` ao lado (recusado pelo provider Azure). Enum vai sem `description` no campo; o texto fica na docstring do enum.
+- As tools vão com `strict: False`: o schema do MCP não tem `additionalProperties: false`.
+- Tools devem devolver `minimum_order_quantity` já na busca: o agente raramente chama `detalhar_produto`.
 
 ## Saída estruturada (o draft)
 
