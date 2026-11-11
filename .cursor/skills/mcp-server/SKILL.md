@@ -1,6 +1,6 @@
 ---
 name: mcp-server
-description: Constrói e testa o servidor MCP do case (tools buscar_produtos e detalhar_produto sobre a DummyJSON) com o SDK oficial MCP Python v2 (MCPServer, add_tool com métodos de classe, Streamable HTTP stateless, ToolError, Client in-memory), seguindo DDD com schemas Pydantic por assunto e uma classe por arquivo. Use ao criar ou alterar tools MCP, o adapter da DummyJSON, a configuração de transporte/Host allowlist ou os testes do mcp-server.
+description: Constrói e testa o servidor MCP do case (tools buscar_produtos, detalhar_produto e criar_requisicao sobre a DummyJSON) com o SDK oficial MCP Python v2 (MCPServer, add_tool com métodos de classe, Streamable HTTP stateless, ToolError, Client in-memory), seguindo DDD com schemas Pydantic por assunto e uma classe por arquivo. Use ao criar ou alterar tools MCP, o adapter da DummyJSON, a configuração de transporte/Host allowlist ou os testes do mcp-server.
 ---
 
 # Servidor MCP (contexto Catálogo, SDK oficial `mcp` v2)
@@ -57,6 +57,20 @@ mcp-server/src/catalog_mcp/
 ```
 
 Fluxo: `Tool.execute` → `UseCase.execute` → `ProductCatalog` (port) → `DummyJsonProductCatalog` → `DummyJsonHttpClient`.
+
+### Busca por categoria
+
+- `buscar_produtos(termo, categoria=None)`: `categoria` é `ProductCategory` (`schemas/product/product_category.py`, as 24 categorias de `GET /products/category-list`). O enum aparece no schema da tool, então o modelo vê os valores válidos.
+- Com categoria, `SearchProductsUseCase` chama `ProductCatalog.list_category` (`GET /products/category/{c}?limit=0`, no máximo 30 produtos) e filtra por palavra do termo no título ou na marca. Sem nenhum produto com o termo, devolve a categoria inteira.
+- Motivo: buscas traduzidas do português falham quando o modelo não sabe o que existe ("cadeira" → 0; categoria `furniture` → a cadeira que existe).
+
+### Terceira tool: `criar_requisicao` (Fase 13)
+
+- `CreateRequisitionTool` (`read_only=False`, `destructive=False`, `idempotent=True`, `open_world=False`): `execute(items, missing, message, max_unit_price, request_text, idempotency_key)`. Os dois últimos são preenchidos pelo backend e escondidos do modelo.
+- `SubmitRequisitionUseCase(catalog, registry)`: soma quantidades do mesmo id, busca cada id com `catalog.get` (preço, estoque e pedido mínimo reais) e registra.
+- Port `RequisitionRegistry` → `BackendRequisitionRegistry` (`infrastructure/backend/`): `POST {BACKEND_URL}/internal/requisicoes` com `X-Internal-Token`. 422 → `RequisitionRejectedError` (o motivo volta ao modelo); outros erros ou rede → `RequisitionRegistryUnavailableError` ("não diga ao usuário que ela foi criada").
+- Schemas em `schemas/requisition/` (`CamelModel`, `RequisitionSubmission`, `RequisitionSubmissionItem`, `RegisteredRequisition`, `RegistrationResponse`) e `schemas/tools/created_requisition_result.py`.
+- `Settings`: `backend_url`, `backend_timeout_s` e `internal_api_token` (obrigatório, mínimo de 16 caracteres).
 
 ## Template de uma tool
 
@@ -154,8 +168,8 @@ Cobertura mínima: para cada tool, caminho feliz, erro de negócio (vazio/inexis
 ## Checklist
 
 - [ ] Uma classe por arquivo; dados em `schemas/`; sem dataclass e sem função solta
-- [ ] Os nomes são exatamente `buscar_produtos(termo)` e `detalhar_produto(id)`
+- [ ] Os nomes são exatamente `buscar_produtos(termo)`, `detalhar_produto(id)` e `criar_requisicao(items, ...)`
 - [ ] Docstring clara em pt-BR no `execute` e `Field(description=...)` em cada argumento
-- [ ] Retorno é modelo Pydantic (gera `structured_content`) e `read_only_hint=True`
+- [ ] Retorno é modelo Pydantic (gera `structured_content`); `read_only_hint=True` nas tools de leitura
 - [ ] `transport_security` configurado para o hostname do compose
 - [ ] Os testes usam `Client(server)` in-memory e não acessam rede
