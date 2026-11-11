@@ -12,6 +12,7 @@ class ToolResult(BaseModel):
     text: str
     structured_content: dict[str, JsonValue] | None = None
 
+    # Texto devolvido ao LLM: o JSON estruturado quando houver, senão o texto (ou o erro).
     def model_output(self) -> str:
         if self.is_error or self.structured_content is None:
             return self.text
