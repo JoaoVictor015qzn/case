@@ -13,6 +13,7 @@ class FakeCatalogMcpServer:
         """Ferramenta que sempre falha."""
         raise ToolError(f"Catálogo indisponível ao buscar {termo}.")
 
+    # Registra uma tool que funciona (buscar_produtos) e outra que sempre falha (quebrada).
     def create(self) -> MCPServer:
         server = MCPServer("fake-catalog")
         server.add_tool(self.search, name="buscar_produtos")
