@@ -1,5 +1,6 @@
 import type { ToolCall } from "@/lib/types/tool-call";
 
+// Lista recolhível das ferramentas MCP chamadas, com argumentos, resultado e duração.
 export function ToolCallList({ toolCalls }: { toolCalls: ToolCall[] }) {
   if (toolCalls.length === 0) return null;
   return (
