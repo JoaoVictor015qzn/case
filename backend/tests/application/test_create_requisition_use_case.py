@@ -1,99 +1,95 @@
-from decimal import Decimal
-
 import pytest
 
 from app.application.create_requisition_use_case import CreateRequisitionUseCase
 from app.domain.errors.llm_timeout_error import LLMTimeoutError
 from app.domain.errors.requisition_not_fulfillable_error import RequisitionNotFulfillableError
-from app.domain.services.grounding_validator import GroundingValidator
-from app.domain.services.requisition_factory import RequisitionFactory
+from app.domain.errors.requisition_not_saved_error import RequisitionNotSavedError
 from app.schemas.agent.agent_run import AgentRun
 from app.schemas.agent.draft_status import DraftStatus
-from app.schemas.requisition.requisition_status import RequisitionStatus
 from tests.fakes.agent_run_builder import AgentRunBuilder
 from tests.fakes.fake_purchasing_agent import FakePurchasingAgent
 from tests.fakes.in_memory_unit_of_work import InMemoryUnitOfWork
-from tests.fakes.sample_snapshots import SampleSnapshots
+from tests.fakes.requisition_samples import RequisitionSamples
 
+# Todos os testes do módulo são assíncronos e rodam com anyio.
 pytestmark = pytest.mark.anyio
 
 
+# Caso de uso com agente falso que, se agent_saves, grava como a tool criar_requisicao.
 class UseCaseHarness:
-    def __init__(self, run: AgentRun) -> None:
-        self.agent = FakePurchasingAgent(run)
+    def __init__(self, run: AgentRun, *, agent_saves: bool) -> None:
         self.unit_of_work = InMemoryUnitOfWork()
-        self.use_case = CreateRequisitionUseCase(
-            self.agent, self.unit_of_work, GroundingValidator(), RequisitionFactory()
+        self.agent = FakePurchasingAgent(
+            run,
+            saves=RequisitionSamples.two_laptops() if agent_saves else None,
+            unit_of_work=self.unit_of_work,
         )
+        self.use_case = CreateRequisitionUseCase(self.agent, self.unit_of_work)
 
 
-async def test_saves_requisition_with_prices_from_the_catalog() -> None:
-    run = AgentRunBuilder().observed(SampleSnapshots.MACBOOK).item(78, 2).build()
-    harness = UseCaseHarness(run)
+# Devolve a requisição gravada pela tool com a chave deste pedido e o rastro das tools.
+async def test_returns_the_requisition_the_agent_saved_with_this_request_key() -> None:
+    run = AgentRunBuilder().tool_call("buscar_produtos").tool_call("criar_requisicao").build()
+    harness = UseCaseHarness(run, agent_saves=True)
 
-    created = await harness.use_case.execute("2 macbooks")
+    created = await harness.use_case.execute("1 macbook e 2 lenovos", "chave-1")
 
-    assert created.requisition.id == 1
-    assert created.requisition.total.amount == Decimal("3999.98")
+    assert harness.agent.requests[0].idempotency_key == "chave-1"
+    assert created.requisition.idempotency_key == "chave-1"
     assert created.replayed is False
-    assert harness.unit_of_work.committed == [created.requisition]
+    assert [call.name for call in created.tool_calls] == ["buscar_produtos", "criar_requisicao"]
 
 
-async def test_returns_the_tool_calls_of_the_run() -> None:
-    run = (
-        AgentRunBuilder()
-        .observed(SampleSnapshots.MACBOOK)
-        .tool_call("buscar_produtos")
-        .item(78, 1)
-        .build()
-    )
-    harness = UseCaseHarness(run)
-
-    created = await harness.use_case.execute("1 macbook")
-
-    assert [call.name for call in created.tool_calls] == ["buscar_produtos"]
-
-
-async def test_saves_nothing_when_nothing_is_fulfillable() -> None:
-    harness = UseCaseHarness(AgentRunBuilder().status(DraftStatus.UNFULFILLABLE).build())
-
-    with pytest.raises(RequisitionNotFulfillableError):
-        await harness.use_case.execute("uma ferrari")
-
-    assert harness.unit_of_work.committed == []
-
-
-async def test_discards_unobserved_item_and_saves_the_rest_as_partial() -> None:
-    run = AgentRunBuilder().observed(SampleSnapshots.LENOVO).item(81, 1).item(999, 1).build()
-    harness = UseCaseHarness(run)
+# Sem Idempotency-Key do cliente, gera uma chave e a repassa ao agente.
+async def test_generates_a_key_when_the_client_sends_none() -> None:
+    harness = UseCaseHarness(AgentRunBuilder().build(), agent_saves=True)
 
     created = await harness.use_case.execute("pedido")
 
-    assert [item.product_id for item in created.requisition.items] == [81]
-    assert created.requisition.status is RequisitionStatus.PARTIAL
+    generated = harness.agent.requests[0].idempotency_key
+    assert len(generated) == 32
+    assert created.requisition.idempotency_key == generated
 
 
+# Pedido impossível e nada gravado vira RequisitionNotFulfillableError com os faltantes.
+async def test_unfulfillable_without_saving_is_not_fulfillable() -> None:
+    run = AgentRunBuilder().status(DraftStatus.UNFULFILLABLE).missing("ferrari: não existe").build()
+    harness = UseCaseHarness(run, agent_saves=False)
+
+    with pytest.raises(RequisitionNotFulfillableError) as error:
+        await harness.use_case.execute("uma ferrari")
+
+    assert error.value.missing == ("ferrari: não existe",)
+
+
+# Agente que diz "completo" sem ter chamado criar_requisicao gera RequisitionNotSavedError.
+async def test_claiming_success_without_saving_is_an_error() -> None:
+    run = AgentRunBuilder().status(DraftStatus.COMPLETE).tool_call("buscar_produtos").build()
+    harness = UseCaseHarness(run, agent_saves=False)
+
+    with pytest.raises(RequisitionNotSavedError) as error:
+        await harness.use_case.execute("1 macbook")
+
+    assert [call.name for call in error.value.tool_calls] == ["buscar_produtos"]
+
+
+# Repetir a chave devolve a mesma requisição (replayed) sem rodar o agente de novo.
 async def test_same_idempotency_key_does_not_run_the_agent_twice() -> None:
-    run = AgentRunBuilder().observed(SampleSnapshots.MACBOOK).item(78, 1).build()
-    harness = UseCaseHarness(run)
+    harness = UseCaseHarness(AgentRunBuilder().build(), agent_saves=True)
 
-    first = await harness.use_case.execute("1 macbook", "chave-1")
-    second = await harness.use_case.execute("1 macbook", "chave-1")
+    first = await harness.use_case.execute("pedido", "chave-1")
+    second = await harness.use_case.execute("pedido", "chave-1")
 
     assert second.replayed is True
     assert second.requisition.id == first.requisition.id
     assert harness.agent.calls == 1
-    assert len(harness.unit_of_work.committed) == 1
 
 
-async def test_agent_errors_propagate_without_saving() -> None:
-    agent = FakePurchasingAgent(error=LLMTimeoutError())
-    unit_of_work = InMemoryUnitOfWork()
+# Erros de domínio do agente, como timeout do LLM, sobem sem ser engolidos.
+async def test_agent_errors_propagate() -> None:
     use_case = CreateRequisitionUseCase(
-        agent, unit_of_work, GroundingValidator(), RequisitionFactory()
+        FakePurchasingAgent(error=LLMTimeoutError()), InMemoryUnitOfWork()
     )
 
     with pytest.raises(LLMTimeoutError):
         await use_case.execute("1 macbook")
-
-    assert unit_of_work.committed == []
