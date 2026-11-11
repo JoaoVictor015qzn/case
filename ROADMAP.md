@@ -15,12 +15,12 @@ Legenda: ✅ feito · 🟡 em andamento / feito sem commit · ⬜ falta · ⭐ o
 | Servidor MCP | ✅ | 19 testes, ruff e ty verdes; e2e com a DummyJSON real; commitado |
 | Postgres + pgAdmin | ✅ | Sobem saudáveis com o mcp-server; pgAdmin importa o servidor `compras` |
 | Validação do modelo na OpenRouter | ✅ | `openai/gpt-4.1-mini` aceita tools + `json_schema` strict; commitado |
-| Backend (FastAPI + agente) | 🟡 | Fases 3–6 commitadas; HTTP e Docker prontos sem commit (69 testes; `POST /requisicoes` real OK) |
-| Chat (Next.js) | 🟡 | Pronto sem commit; sobe no compose e passa pelo BFF; falta o teste manual no navegador |
-| CI | ⬜ | |
-| Script de evals | ⬜ | |
-| README | ⬜ | Hoje está vazio (commit inicial do GitHub) |
-| Entrega | ⬜ | |
+| Backend (FastAPI + agente) | ✅ | 85 testes; endpoint interno da `criar_requisicao` |
+| Chat (Next.js) | ✅ | Testado no navegador |
+| CI | ✅ | `.github/workflows/ci.yml`: containers de teste, lint/build do frontend e `docker compose config` |
+| Script de evals | ✅ | `backend/evals/` com os 5 pedidos; placar medido no teste em clone limpo |
+| README | ✅ | Como rodar, arquitetura, decisões, testes, uso de IA e limitações |
+| Entrega | ✅ | Segredos conferidos, código comentado, commits por arquivo; clone limpo, merge e `.zip` com o usuário |
 
 ## Requisitos obrigatórios do case
 
@@ -31,16 +31,16 @@ Legenda: ✅ feito · 🟡 em andamento / feito sem commit · ⬜ falta · ⭐ o
 | O modelo decide quando chamar cada ferramenta | ✅ | Loop do `OpenRouterPurchasingAgent`, exposto em `POST /requisicoes` |
 | DummyJSON falhou ou demorou → mensagem clara no chat | ✅ | MCP (timeout, retry) → backend 503/504 → BFF → chat com `detail` |
 | Um teste por ferramenta do MCP, sem chave de LLM | ✅ | `mcp-server/tests/interfaces/` |
-| README com como rodar e principais decisões | ⬜ | |
+| README com como rodar e principais decisões | ✅ | `README.md` |
 
 ## Diferenciais
 
 | Diferencial | Status | Plano |
 |---|---|---|
 | Ferramentas chamadas aparecendo no chat | ✅ | `toolCalls` na resposta da API (inclusive no 422) + `ToolCallList` no chat |
-| Script com 5 pedidos de teste | ⬜ | `backend/evals/` |
-| CI com lint e testes | ⬜ | GitHub Actions rodando os mesmos containers `*-tests` |
-| ⭐ Terceira tool `criar_requisicao` | ⬜ | Só se sobrar tempo; precisa de decisão de design |
+| Script com 5 pedidos de teste | ✅ | `backend/evals/`, conferindo cada item contra a DummyJSON |
+| CI com lint e testes | ✅ | GitHub Actions rodando os mesmos containers `*-tests` |
+| ⭐ Terceira tool `criar_requisicao` | ✅ | O agente decide quando gravar; grounding no servidor; endpoint interno com token |
 
 ---
 
@@ -137,7 +137,7 @@ Legenda: ✅ feito · 🟡 em andamento / feito sem commit · ⬜ falta · ⭐ o
 - [x] Smoke real (agente + MCP + OpenRouter + Postgres): notebooks ✅, ferrari → nada salvo (agora busca antes) ✅, Samsung + mouse → parcial com produto real ✅, idempotência ✅, MCP fora → `ToolsUnavailableError` ✅, modelo inválido → `LLMConfigurationError` ✅
 - [x] Commit
 
-## Fase 7 — Backend: HTTP 🟡
+## Fase 7 — Backend: HTTP ✅
 
 - [x] `schemas/api/` com `ApiModel` (JSON em camelCase): `CreateRequisitionRequest`, `RequisitionCreatedResponse`, `RequisitionPublic`, `RequisitionItemPublic`, `ToolCallPublic`, `ErrorResponse`; `schemas/health/HealthStatus`
 - [x] `RequisitionsRouter` (`POST` 201 / replay 200, `GET /requisicoes`, header `Idempotency-Key`), `HealthRouter`
@@ -145,9 +145,9 @@ Legenda: ✅ feito · 🟡 em andamento / feito sem commit · ⬜ falta · ⭐ o
 - [x] Providers em `interfaces/http/dependencies/` (agente e gateway MCP por request; `AsyncOpenAI` e `Database` no lifespan via `ApplicationResources`)
 - [x] `main.py` (`Application`: composition root, lifespan, logging com correlation id)
 - [x] 9 testes com `TestClient` + `dependency_overrides` (69 no total), ruff e ty verdes
-- [ ] Commit
+- [x] Commit
 
-## Fase 8 — Integração com Docker (marco principal) 🟡
+## Fase 8 — Integração com Docker (marco principal) ✅
 
 - [x] Estágio `runtime` no `backend/Dockerfile` (não-root, `prestart.sh` + `fastapi run`) e serviço `backend` no `backend/compose.yml` (fail-fast, `depends_on` saudável, healthcheck)
 - [x] `include` do backend no `compose.yml` da raiz
@@ -156,9 +156,9 @@ Legenda: ✅ feito · 🟡 em andamento / feito sem commit · ⬜ falta · ⭐ o
 - [x] **Pedido de exemplo funcionando via `POST /requisicoes`**: 2× Huawei Matebook X Pro, USD 2.799,98; replay com a mesma chave → 200 `replayed`
 - [x] Derrubar o mcp-server → 503 com mensagem clara
 - [x] Porta 8000 ocupada por outro projeto do usuário (`med-lambda-orchestrator-fastapi-gateway-1`): parado com aprovação
-- [ ] Commit
+- [x] Commit
 
-## Fase 9 — Chat (Next.js) 🟡
+## Fase 9 — Chat (Next.js) ✅
 
 - [x] Estilo decidido: componentes como funções, lógica em classes
 - [x] Next 16.4.6 + React 19.3 (`create-next-app`, sem Tailwind, CSS simples)
@@ -170,36 +170,49 @@ Legenda: ✅ feito · 🟡 em andamento / feito sem commit · ⬜ falta · ⭐ o
 - [x] `npm run lint`, `tsc` e `npm run build` (no Docker) verdes
 - [x] Conferido pelo BFF: parcial (3× Galaxy S7 + mouse em falta) 201, ferrari 422, MCP fora 503, backend fora 502
 - [x] Prompt v2026-11-10.2: buscar pela marca e tentar outro termo quando o resultado não traz o item (antes, "smartphones Samsung" virava 422)
-- [ ] Teste manual no navegador (http://localhost:3000)
-- [ ] Commit
+- [x] Teste manual no navegador (http://localhost:3000)
+- [x] Commit (289 commits na `develop`, push feito pelo usuário)
 
-## Fase 10 — CI e evals ⬜
+## Fase 10 — CI e evals ✅
 
-- [ ] `.github/workflows/ci.yml`: containers `*-tests`, lint/build do frontend, `docker compose config`
-- [ ] `backend/evals/` com os 5 casos (exemplo, notebook → laptop, smartphones, Ferrari, orçamento impossível)
-- [ ] Conferir as expectativas contra o catálogo real
-- [ ] Rodar e registrar o placar
+- [x] `.github/workflows/ci.yml`: containers `*-tests`, lint/build do frontend, `docker compose config` (passos simulados localmente: verdes)
+- [x] `backend/evals/` com os 5 casos (3 laptops, notebook → laptop, smartphones, Ferrari, orçamento impossível), em classes; título, preço e categoria conferidos direto na DummyJSON
+- [x] Expectativas conferidas contra o catálogo real (laptops até US$ 1.500: 3; Ferrari: 0; laptop até US$ 50: 0)
+- [x] Testes do `EvalChecker` (85 testes no backend)
+- [x] Runner conferido contra o sistema no ar; placar registrado no teste em clone limpo
+- [x] Commit
 
-## Fase 11 — README ⬜
+## Fase 11 — README ✅
 
-- [ ] Como rodar (3 passos) e portas (3000, 8000, 5050)
-- [ ] Arquitetura (diagrama + DDD em um parágrafo)
-- [ ] Principais decisões no formato o quê → por quê → trade-off
-- [ ] Testes, evals e placar
-- [ ] Uso de IA (Cursor, skills, o que foi revisado e decidido manualmente)
-- [ ] Limitações e próximos passos
+- [x] Como rodar (3 passos) e portas (3000, 8000, 5050)
+- [x] Arquitetura (diagrama Mermaid + DDD em um parágrafo)
+- [x] Principais decisões no formato o quê → por quê → trade-off
+- [x] Testes e evals
+- [x] Uso de IA (rascunho para o usuário revisar)
+- [x] Limitações e próximos passos
+- [x] Commit
 
-## Fase 12 — Entrega ⬜
+## Fase 12 — Entrega ✅
 
-- [ ] Clone limpo → `cp .env.example .env` → chave → `docker compose up --build` → pedido de exemplo OK
-- [ ] Nenhum segredo no histórico (`git log -p` sem `sk-or-`)
-- [ ] Merge `develop` → `main`
-- [ ] `.zip` com a pasta `.git`
+- [x] Nenhum segredo no histórico nem nos arquivos novos (`sk-or-` e o token interno: 0 ocorrências; `.env` e `docs/` ignorados)
+- [x] Roadmap e skills (`agent-loop`, `mcp-server`, `fastapi-backend`, `quality-ci`) atualizados
+- [x] Script de commits gerado (`Desktop\commits-fase-10-11-12-13.ps1`)
+- [x] Código e testes comentados (uma linha por trecho, em português) para facilitar a revisão; só linhas de comentário acrescentadas, testes e lint verdes
+- [x] Commits (usuário)
+- [x] Clone limpo → `cp .env.example .env` → chave + token → `docker compose up --build` → pedido de exemplo OK (usuário)
+- [x] Merge `develop` → `main` (usuário)
+- [x] `.zip` com a pasta `.git`
 
-## Fase 13 — ⭐ `criar_requisicao` (só se sobrar tempo) ⬜
+## Fase 13 — ⭐ `criar_requisicao` ✅
 
-- [x] Desenho decidido: o MCP chama um endpoint interno do backend (só começa depois do README)
-- [ ] Implementar e ajustar o prompt e o grounding
+- [x] Desenho decidido com o usuário: só a tool grava (sucesso sem gravar → 502); MCP busca preço, estoque e pedido mínimo na DummyJSON; backend valida e grava; `request_text` e `idempotency_key` injetados pelo backend e escondidos do modelo; endpoint interno com `X-Internal-Token`; backend recusa ids não observados nas buscas
+- [x] MCP: `CreateRequisitionTool`, `SubmitRequisitionUseCase`, `BackendRequisitionRegistry` (29 testes)
+- [x] Backend: `POST /internal/requisicoes` + `InternalTokenGuard`, `RegisterRequisitionUseCase`, `CreateRequisitionToolPolicy`, fluxo tool-only no `CreateRequisitionUseCase`, prompt `2026-11-11.1` (85 testes)
+- [x] `INTERNAL_API_TOKEN` no `.env.example` e nos compose (fail-fast); `BACKEND_URL` no mcp-server
+- [x] Conferido no ambiente real, sem LLM: tool via MCP grava (MacBook ×2 = USD 3.999,98), replay pela chave, estoque insuficiente recusado sem gravar, id inexistente recusado, endpoint sem token → 401, rota fora do OpenAPI
+- [x] Mitigação de buscas em português (decidida com o usuário: categorias em vez de prompt em inglês): `categoria` opcional na `buscar_produtos`, limitada às 24 categorias da DummyJSON; prompt `2026-11-11.2`; 34 testes no MCP; conferido na DummyJSON real ("cadeira" → 0, `chair` em `furniture` → 1)
+- [x] E2E com o LLM pelo chat (usuário, local)
+- [x] Commit
 
 ---
 
@@ -228,6 +241,8 @@ Legenda: ✅ feito · 🟡 em andamento / feito sem commit · ⬜ falta · ⭐ o
 | Testes e lint via estágio `test` do Dockerfile | Nada instalado no host; CI igual ao local | Rebuild da camada de código a cada execução |
 | pgAdmin com servidor pré-registrado | Inspeção do banco sem configuração manual | Um serviço extra no compose |
 | MCP stateless com retry só em falha transitória | Escala horizontal; resiliência a DummyJSON instável | Pior caso ≈ 3 × timeout |
+| Só a tool `criar_requisicao` grava, com grounding no servidor | O agente decide quando gravar e não consegue inventar preço | Depende do modelo chamar a tool; uma ida a mais à DummyJSON por item |
+| Endpoint interno protegido por `X-Internal-Token` | Só o MCP grava requisições pelo atalho interno | Mais um segredo no `.env` |
 | Um commit por arquivo, rodado pelo usuário no próprio terminal | Histórico granular, sem o coautor que o Cursor injeta nos commits do agente | Histórico longo (214 commits até a Fase 6) |
 
 ## Decisões pendentes (consultar o usuário)
@@ -246,6 +261,7 @@ Legenda: ✅ feito · 🟡 em andamento / feito sem commit · ⬜ falta · ⭐ o
 | Provider da OpenRouter rejeitar o schema `strict` | Aconteceu na Fase 2 (`$ref` com `description`); corrigido e coberto por teste |
 | Modelo inventar produtos ou responder sem consultar o catálogo | Visto na Fase 2; o grounding descarta ids não observados; o prompt da Fase 6 vai exigir busca antes de "não encontrado" |
 | Chave com orçamento limitado | Modelo barato; evals só quando necessário |
+| Chave recusada pela OpenRouter (aconteceu em 11/11: 401 "User not found") | API devolve 502 com mensagem clara; pedir chave nova para o e2e e os evals |
 | `docker compose up` falhar na máquina do avaliador | Teste em clone limpo; fail-fast no `.env`; healthchecks |
 | Prazo | Fluxo completo (Fases 7–9) pronto em 10/11 à noite; restam CI, evals, README e entrega |
 | Porta do host ocupada na máquina de quem roda (8000, 3000, 5050) | Documentar no README como liberar a porta |
