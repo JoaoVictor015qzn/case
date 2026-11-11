@@ -12,17 +12,21 @@ logger = logging.getLogger(__name__)
 class ProductSnapshotMapper:
     """Extrai os produtos observados do resultado de buscar_produtos ou detalhar_produto."""
 
+    # Chave da lista de produtos no resultado de buscar_produtos.
     PRODUCTS_KEY = "products"
 
+    # Converte o resultado da ferramenta em snapshots; erro ou conteúdo vazio vira lista vazia.
     def from_tool_result(self, result: ToolResult) -> list[ProductSnapshot]:
         content = result.structured_content
         if result.is_error or content is None:
             return []
+        # Busca traz uma lista em "products"; detalhar traz o produto direto no conteúdo.
         listed = content.get(self.PRODUCTS_KEY)
         payloads: list[JsonValue] = listed if isinstance(listed, list) else [content]
         snapshots = [self._parse(payload) for payload in payloads]
         return [snapshot for snapshot in snapshots if snapshot is not None]
 
+    # Valida um produto do payload; se inválido, loga e o descarta.
     @staticmethod
     def _parse(payload: JsonValue) -> ProductSnapshot | None:
         try:
