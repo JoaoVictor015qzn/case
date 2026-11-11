@@ -16,11 +16,13 @@ Exemplos oficiais (OpenRouter e cliente MCP): [reference.md](reference.md). Regr
 
 | Arquivo | Classe | Papel |
 |---|---|---|
-| `domain/ports/purchasing_agent.py` | `PurchasingAgent` (ABC) | `async def run(request_text) -> AgentRun` |
+| `domain/ports/purchasing_agent.py` | `PurchasingAgent` (ABC) | `async def run(request: AgentRequest) -> AgentRun` |
 | `domain/ports/catalog_tools_gateway.py` | `CatalogToolsGateway` (ABC) | `list_tools()`, `call_tool(name, arguments)` |
-| `domain/services/grounding_validator.py` | `GroundingValidator` | aplica as regras anti-invenção |
-| `domain/services/requisition_factory.py` | `RequisitionFactory` | monta o agregado a partir do draft validado |
-| `application/create_requisition_use_case.py` | `CreateRequisitionUseCase` | roda o agente, valida, persiste via Unit of Work |
+| `domain/services/grounding_validator.py` | `GroundingValidator` | `validate(candidates)`: estoque, pedido mínimo, orçamento |
+| `domain/services/requisition_factory.py` | `RequisitionFactory` | monta o agregado a partir da `RequisitionRegistration` validada |
+| `application/create_requisition_use_case.py` | `CreateRequisitionUseCase` | roda o agente e busca pela chave o que a tool gravou (nada gravado → 422 ou 502) |
+| `application/register_requisition_use_case.py` | `RegisterRequisitionUseCase` | endpoint interno: valida e grava, ou recusa sem gravar |
+| `infrastructure/llm/create_requisition_tool_policy.py` | `CreateRequisitionToolPolicy` | esconde e injeta `request_text`/`idempotency_key`; recusa ids não observados |
 | `infrastructure/llm/openrouter_purchasing_agent.py` | `OpenRouterPurchasingAgent` | o loop (SDK openai) |
 | `infrastructure/llm/system_prompt.py` | `SystemPrompt` | prompt versionado (constante de classe) |
 | `infrastructure/llm/mcp_tool_schema_converter.py` | `McpToolSchemaConverter` | tool MCP → formato function da Responses API |
@@ -44,7 +46,7 @@ class OpenRouterPurchasingAgent(PurchasingAgent):
     def __init__(self, client: AsyncOpenAI, gateway: CatalogToolsGateway,
                  converter: McpToolSchemaConverter, ...) -> None: ...
 
-    async def run(self, request_text: str) -> AgentRun:
+    async def run(self, request: AgentRequest) -> AgentRun:
         async with self._gateway as gateway:
             tools = self._converter.convert(await gateway.list_tools())
             executor = ToolCallExecutor(gateway)
@@ -117,15 +119,20 @@ class RequisitionDraft(BaseModel):
 
 Risco conhecido: `X | None` vira `anyOf` e `Field(ge=1)` vira `minimum`, que alguns providers rejeitam em `strict`. Valide o modelo escolhido antes; se rejeitar, simplifique o schema e valide `quantity >= 1` no `GroundingValidator`.
 
+## Gravação: só a tool `criar_requisicao` grava (Fase 13)
+
+1. O modelo chama `criar_requisicao(items=[{product_id, quantity}], missing, message, max_unit_price)`. Ele **não** vê `request_text` nem `idempotency_key`: o `McpToolSchemaConverter` tira esses campos do schema, e o `ToolCallExecutor` os injeta (sobrescrevendo o que o modelo mandar), via `CreateRequisitionToolPolicy`.
+2. Defesa em profundidade: se algum id não apareceu nas buscas desta conversa, o executor devolve erro ao modelo **sem chamar o MCP**.
+3. O MCP busca cada id na DummyJSON e envia título, preço, estoque e pedido mínimo reais para `POST /internal/requisicoes` (header `X-Internal-Token`).
+4. `RegisterRequisitionUseCase`: chave repetida → replay; qualquer violação no `GroundingValidator` → `RequisitionRejectedError` (422, nada gravado; o motivo volta ao modelo para corrigir ou mover para `missing`).
+5. Depois do loop, `CreateRequisitionUseCase` procura a requisição pela chave. Achou → 201 com `tool_calls`. Draft `unfulfillable` → 422 com `missing`. O modelo disse que criou e nada foi gravado → `RequisitionNotSavedError` (502).
+
 ## Grounding (anti-invenção): `GroundingValidator`, no domínio, não no LLM
 
-Para cada `DraftItem`:
-1. O `product_id` precisa estar em `observed_products`. Se não estiver, o item é descartado e vai para `missing` ("produto não verificado no catálogo").
-2. Preço e título vêm **do snapshot**, nunca do texto do modelo.
-3. `1 <= quantity <= stock`, e `unit_price <= max_unit_price` quando houver orçamento (`Budget`). Se a regra for violada, o item é descartado e vai para `missing`.
-4. Os totais são calculados pelo agregado `Requisition` com `Decimal`.
-
-Se não sobrar nenhum item válido, levante `RequisitionNotFulfillableError(missing)`. Nesse caso nada é salvo.
+- Preço, título, estoque e pedido mínimo vêm **da DummyJSON via MCP**, nunca do modelo.
+- `minimum_order_quantity <= quantity <= stock`, e `unit_price <= max_unit_price` quando houver orçamento (`Budget`).
+- Os totais são calculados pelo agregado `Requisition` com `Decimal`.
+- Status: `partial` se houver `missing`, senão `complete`.
 
 ## Prompt de sistema (pt-BR, em `SystemPrompt.TEXT`)
 
@@ -165,6 +172,8 @@ Classes em `domain/errors/`, uma por arquivo, herdando de `DomainError`. A tradu
 | JSON inválido no draft (`ValidationError`) | `AgentOutputError` | 502 |
 | Estouro de iterações | `AgentIterationLimitError` | 502 |
 | Nada atende | `RequisitionNotFulfillableError` | 422, com `missing` |
+| Modelo afirmou sucesso sem gravar | `RequisitionNotSavedError` | 502, com `toolCalls` |
+| Endpoint interno: regra violada | `RequisitionRejectedError` | 422 (o MCP repassa o motivo ao modelo) |
 
 ## Modelo
 
