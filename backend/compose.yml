@@ -1,4 +1,30 @@
 services:
+  backend:
+    build:
+      context: .
+      target: runtime
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-app}:${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no .env}@db:5432/${POSTGRES_DB:-compras}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:?defina OPENROUTER_API_KEY no .env}
+      OPENROUTER_MODEL: ${OPENROUTER_MODEL:?defina OPENROUTER_MODEL no .env}
+      MCP_URL: http://mcp-server:8000/mcp
+      LLM_TIMEOUT_S: ${LLM_TIMEOUT_S:-60}
+    depends_on:
+      db:
+        condition: service_healthy
+        restart: true
+      mcp-server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 15s
+    restart: unless-stopped
+
   backend-tests:
     build:
       context: .
