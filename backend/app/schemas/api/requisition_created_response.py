@@ -6,6 +6,7 @@ from app.schemas.api.tool_call_public import ToolCallPublic
 from app.schemas.requisition.created_requisition import CreatedRequisition
 
 
+# Resposta de POST /requisicoes: requisição, pendências, tools chamadas e se foi replay.
 class RequisitionCreatedResponse(ApiModel):
     requisition: RequisitionPublic
     message: str
@@ -13,6 +14,7 @@ class RequisitionCreatedResponse(ApiModel):
     tool_calls: list[ToolCallPublic]
     replayed: bool
 
+    # Monta a resposta HTTP a partir do resultado do caso de uso de criação.
     @classmethod
     def from_domain(cls, created: CreatedRequisition) -> Self:
         requisition = created.requisition
