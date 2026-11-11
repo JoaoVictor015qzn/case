@@ -11,10 +11,12 @@ class GroundingResult(BaseModel):
     accepted: tuple[RequisitionItem, ...]
     rejections: tuple[str, ...]
 
+    # Indica se ao menos um item passou na verificação.
     @property
     def has_accepted_items(self) -> bool:
         return bool(self.accepted)
 
+    # Indica se nenhum item proposto foi recusado.
     @property
     def is_clean(self) -> bool:
         return not self.rejections
