@@ -9,6 +9,7 @@ class DatabaseSettings(BaseSettings):
 
     database_url: PostgresDsn
 
+    # Troca o esquema postgresql:// por postgresql+psycopg:// para usar o driver psycopg 3.
     @field_validator("database_url", mode="before")
     @classmethod
     def use_psycopg_driver(cls, value: object) -> object:
