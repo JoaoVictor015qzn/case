@@ -4,7 +4,7 @@
 !.env.example
 
 # Material do processo seletivo (contém a chave da OpenRouter)
-docs/
+docs/*.pdf
 *.pdf
 
 # Python
