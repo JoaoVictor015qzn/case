@@ -140,12 +140,30 @@ async def test_stops_at_the_iteration_limit() -> None:
         await AgentHarness(openrouter, max_iterations=2).agent.run(REQUEST)
 
 
-# Resposta final que não é o JSON do rascunho vira AgentOutputError.
-async def test_invalid_final_answer_is_an_agent_output_error() -> None:
-    openrouter = ScriptedOpenRouter(ScriptedOpenRouter.final_text("não é JSON"))
+# Resposta final fora do schema volta ao modelo com os erros, e a resposta corrigida é aceita.
+async def test_invalid_final_answer_is_sent_back_for_correction() -> None:
+    openrouter = ScriptedOpenRouter(
+        ScriptedOpenRouter.final_text('{"status": "complete"}'),
+        ScriptedOpenRouter.final_draft(DRAFT),
+    )
 
-    with pytest.raises(AgentOutputError):
-        await AgentHarness(openrouter).agent.run(REQUEST)
+    run = await AgentHarness(openrouter).agent.run(REQUEST)
+
+    assert run.draft == DRAFT
+    correction = openrouter.requests[1]["input"][-1]
+    assert correction["role"] == "user"
+    assert "items: missing" in correction["content"]
+
+
+# Saída fora do schema até o fim das rodadas vira AgentOutputError, não limite de iterações.
+async def test_invalid_final_answer_until_the_limit_is_an_agent_output_error() -> None:
+    openrouter = ScriptedOpenRouter(
+        ScriptedOpenRouter.final_text("não é JSON"),
+        ScriptedOpenRouter.final_text("não é JSON"),
+    )
+
+    with pytest.raises(AgentOutputError, match="json: json_invalid"):
+        await AgentHarness(openrouter, max_iterations=2).agent.run(REQUEST)
 
 
 # Chave inválida (401) vira erro de configuração e o gateway MCP é fechado mesmo assim.
